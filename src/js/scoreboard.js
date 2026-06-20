@@ -1148,22 +1148,24 @@ async function guardarApiKey() {
 
 (async function cargarCredencialesAlIniciar() {
   const res = await window.__TAURI__.core.invoke('load-api-key');
-  if (res.ok) {
-    if ('apiKey' in res) document.getElementById('apikey').value = res.apiKey;
-    if ('twitchOAuth' in res && document.getElementById('twitchOAuth'))
-      document.getElementById('twitchOAuth').value = res.twitchOAuth;
-    if ('twitchUser' in res && document.getElementById('twitchUser'))
-      document.getElementById('twitchUser').value = res.twitchUser;
-    if ('twitchChannel' in res && document.getElementById('twitchChannel'))
-      document.getElementById('twitchChannel').value = res.twitchChannel;
-    if ('nightbotToken' in res && document.getElementById('nightbotToken'))
-      document.getElementById('nightbotToken').value = res.nightbotToken;
-    if ('nightbotClientId' in res && document.getElementById('nbClientId'))
-      document.getElementById('nbClientId').value = res.nightbotClientId;
-    if ('nightbotClientSecret' in res && document.getElementById('nbClientSecret'))
-      document.getElementById('nbClientSecret').value = res.nightbotClientSecret;
-    if ('nightbotRedirectUri' in res && document.getElementById('nbRedirectUri'))
-      document.getElementById('nbRedirectUri').value = res.nightbotRedirectUri;
+  if (res.ok && res.data) {
+    const d = res.data;
+    if ('apiKey' in d && document.getElementById('apikey'))
+      document.getElementById('apikey').value = d.apiKey;
+    if ('twitchOAuth' in d && document.getElementById('twitchOAuth'))
+      document.getElementById('twitchOAuth').value = d.twitchOAuth;
+    if ('twitchUser' in d && document.getElementById('twitchUser'))
+      document.getElementById('twitchUser').value = d.twitchUser;
+    if ('twitchChannel' in d && document.getElementById('twitchChannel'))
+      document.getElementById('twitchChannel').value = d.twitchChannel;
+    if ('nightbotToken' in d && document.getElementById('nightbotToken'))
+      document.getElementById('nightbotToken').value = d.nightbotToken;
+    if ('nightbotClientId' in d && document.getElementById('nbClientId'))
+      document.getElementById('nbClientId').value = d.nightbotClientId;
+    if ('nightbotClientSecret' in d && document.getElementById('nbClientSecret'))
+      document.getElementById('nbClientSecret').value = d.nightbotClientSecret;
+    if ('nightbotRedirectUri' in d && document.getElementById('nbRedirectUri'))
+      document.getElementById('nbRedirectUri').value = d.nightbotRedirectUri;
   }
 })();
 
