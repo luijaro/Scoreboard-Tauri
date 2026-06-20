@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Scoreboard Overlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Exo:wght@700&display=swap" rel="stylesheet">
+    <script src="js/libs/jquery-3.6.0.min.js"></script>
+    <script src="js/libs/gsap.min.js"></script>
+    <script src="js/scoreboard-overlay.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-family: 'Exo', sans-serif;
+            overflow: hidden;
+        }
+        .scoreboard-bar {
+            position: absolute;
+            top: 32px;
+            left: 0;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            z-index: 2;
+            opacity: 0;
+        }
+        .scoreboard-inner {
+            display: flex;
+            align-items: center;
+            background: #232b3a;
+            border-radius: 0 0 18px 18px;
+            box-shadow: 0 2px 16px #000a;
+            padding: 0 18px;
+            min-width: 700px;
+            max-width: 1100px;
+        }
+        .player-block {
+            display: flex;
+            align-items: center;
+            min-width: 220px;
+            max-width: 320px;
+        }
+        .player-flag {
+            width: 32px;
+            height: 22px;
+            border-radius: 4px;
+            object-fit: cover;
+            border: 2px solid #fff3;
+            background: #222;
+            margin: 0 10px;
+        }
+        .player-tag {
+            font-size: 1em;
+            font-weight: bold;
+            color: #ffe066;
+            background: #2c2c44;
+            border-radius: 6px;
+            padding: 2px 10px;
+            margin-right: 7px;
+            letter-spacing: 1px;
+        }
+        .player-name {
+            font-size: 1.15em;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 1px;
+            max-width: 110px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .player-score {
+            font-size: 1.5em;
+            font-weight: 900;
+            color: #fff;
+            background: #0a1a2a;
+            border-radius: 8px;
+            min-width: 38px;
+            text-align: center;
+            margin: 0 8px;
+            box-shadow: 0 1px 6px #0006;
+            border: 2px solid #1e6cff;
+        }
+        .scoreboard-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 260px;
+            max-width: 340px;
+        }
+        .scoreboard-info {
+            color: #ffe066;
+            font-size: 1.1em;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 8px #000;
+            background: #1e2a3a;
+            border-radius: 8px;
+            padding: 4px 18px;
+            margin-bottom: 2px;
+        }
+        .vs {
+            font-size: 1.1em;
+            color: #7fd6ff;
+            font-weight: bold;
+            margin: 0 0 0 0;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 8px #000;
+        }
+        @media (max-width: 900px) {
+            .scoreboard-inner { min-width: 320px; max-width: 99vw; }
+            .player-block { min-width: 100px; max-width: 160px; }
+            .scoreboard-center { min-width: 120px; max-width: 180px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="scoreboard-bar" id="scoreboard-bar">
+        <div class="scoreboard-inner">
+            <div class="player-block" id="player1">
+                <img class="player-flag" id="flag1" src="" alt="">
+                <span class="player-score" id="score1"></span>
+                <span class="player-tag" id="tag1"></span>
+                <span class="player-name" id="name1"></span>
+            </div>
+            <div class="scoreboard-center">
+                <div class="scoreboard-info" id="scoreboard-info"></div>
+                <span class="vs">VS</span>
+            </div>
+            <div class="player-block" id="player2">
+                <span class="player-name" id="name2"></span>
+                <span class="player-tag" id="tag2"></span>
+                <span class="player-score" id="score2"></span>
+                <img class="player-flag" id="flag2" src="" alt="">
+            </div>
+        </div>
+    </div>
+</body>
+</html>

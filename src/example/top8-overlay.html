@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Top 8 Overlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Exo:wght@700&display=swap" rel="stylesheet">
+    <script src="js/libs/jquery-3.6.0.min.js"></script>
+    <script src="js/libs/gsap.min.js"></script>
+    <script src="js/top8-overlay.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-family: 'Exo', sans-serif;
+            overflow: hidden;
+        }
+        .top8-container {
+            width: 700px;
+            margin: 40px auto 0 auto;
+            background: rgba(20,40,80,0.92);
+            border-radius: 18px;
+            box-shadow: 0 2px 24px #000a;
+            padding: 32px 32px 24px 32px;
+        }
+        .top8-title {
+            color: #ffe066;
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 18px;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 8px #000;
+        }
+        .top8-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px 0;
+            justify-content: space-between;
+        }
+        .top8-slot {
+            width: 48%;
+            background: #1e2a3a;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            padding: 10px 18px;
+            box-shadow: 0 1px 8px #0006;
+            opacity: 0;
+        }
+        .top8-rank {
+            font-size: 2em;
+            font-weight: 900;
+            color: #7fd6ff;
+            width: 38px;
+            text-align: center;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+        .top8-character {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: contain;
+            background: #222;
+            margin-right: 16px;
+            border: 2px solid #7fd6ff44;
+        }
+        .top8-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        .top8-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+        .top8-twitter {
+            font-size: 1em;
+            color: #ffe066;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+        .top8-footer {
+            text-align: center;
+            color: #ffe066;
+            font-size: 1.1em;
+            margin-top: 18px;
+            letter-spacing: 1px;
+        }
+        @media (max-width: 800px) {
+            .top8-container { width: 98vw; padding: 10px 2vw; }
+            .top8-slot { width: 99%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="top8-container">
+        <div class="top8-title" id="top8-title"></div>
+        <div class="top8-list" id="top8-list"></div>
+        <div class="top8-footer" id="top8-footer"></div>
+    </div>
+</body>
+</html>

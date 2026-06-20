@@ -1,0 +1,163 @@
+/* ==========================
+   Bracket Visual
+========================== */
+.bracket-card-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: auto;
+  max-width: 1400px;
+  margin: 2.5em auto 2.5em auto;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  box-shadow: 0 0 40px rgba(0,0,0,0.65);
+  padding: 2.5em 2em 2.5em 2em;
+}
+.bracket-visual-card {
+  width: 100%;
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bracket-visual-rows {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5em;
+  align-items: center;
+}
+.bracket-row {
+  display: flex;
+  flex-direction: row;
+  gap: 2em;
+  justify-content: flex-end;
+  width: 100%;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+  padding: 0 1em;
+}
+.bracket-row-winners {
+  margin-bottom: 1.5em;
+}
+.bracket-row-losers {
+  margin-top: 1.5em;
+}
+.bracket-round {
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+  padding: 1em 1.5em;
+  min-width: 0;
+  flex: 1 1 0;
+  max-width: 260px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 0.5em;
+}
+.bracket-round-title {
+  font-weight: bold;
+  color: var(--text-primary);
+  margin-bottom: 1em;
+  text-align: center;
+  font-size: 1.1em;
+  letter-spacing: 1px;
+}
+.bracket-matches {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2em;
+  width: 100%;
+}
+.bracket-match {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 0.7em 1em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.2);
+}
+.bracket-player {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1em;
+  color: var(--text-primary);
+}
+.bracket-player-name {
+  font-weight: 500;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bracket-score {
+  background: var(--secondary-color);
+  color: var(--text-primary);
+  font-weight: bold;
+  border-radius: 6px;
+  padding: 0.2em 0.8em;
+  margin-left: 1em;
+  min-width: 2em;
+  text-align: center;
+}
+.bracket-score.loser {
+  background: var(--error-color) !important;
+  color: #ffffff !important;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.bracket-player.loser {
+  color: var(--text-primary) !important;
+  opacity: 0.85;
+}
+
+/* Light mode para Bracket Visual */
+/* Light mapping to tokens, so themes control the palette */
+body.light-mode .bracket-card-center,
+body.light-mode .bracket-visual-card { background: var(--bg-secondary); box-shadow: 0 0 40px rgba(0,0,0,0.15); }
+body.light-mode .bracket-round { background: var(--bg-tertiary); color: var(--text-primary); box-shadow: 0 2px 12px rgba(0,0,0,0.12); }
+body.light-mode .bracket-round-title { color: var(--text-primary); }
+body.light-mode .bracket-match { background: var(--bg-secondary); box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
+body.light-mode .bracket-player { color: var(--text-primary); }
+body.light-mode .bracket-player-name { color: var(--text-primary); }
+body.light-mode .bracket-score { background: var(--secondary-color); color: var(--text-primary); border-color: transparent; }
+body.light-mode .bracket-score.loser { background: var(--error-color) !important; color: #fff !important; }
+body.light-mode .bracket-player.loser { color: var(--text-primary) !important; opacity: 0.85; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .bracket-row {
+    flex-wrap: wrap;
+    gap: 1em;
+    padding: 0 0.2em;
+  }
+  .bracket-round {
+    max-width: 98%;
+    min-width: 120px;
+    flex: 1 1 100%;
+    padding: 0.7em 0.5em;
+  }
+  .bracket-card-center {
+    padding: 1.5em 1em;
+    margin: 1em auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .bracket-round {
+    padding: 0.5em 0.3em;
+  }
+  .bracket-round-title {
+    font-size: 0.95em;
+  }
+  .bracket-player {
+    font-size: 0.9em;
+  }
+  .bracket-player-name {
+    max-width: 90px;
+  }
+}

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test Tabs</title>
+  <style>
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .sub-tabs { background: #2c3e50; padding: 1em; margin-bottom: 1.5em; border-radius: 8px; }
+    .sub-tab-btn { background: #34495e; color: #ecf0f1; border: none; border-radius: 6px; padding: 0.6em 1.2em; margin: 0.5em; cursor: pointer; }
+    .sub-tab-btn.active { background: #e74c3c; color: #fff; font-weight: bold; }
+    .sub-tab-panel { display: none; min-height: 200px; background: #f0f0f0; padding: 2em; margin: 1em 0; }
+    .sub-tab-panel.active { display: block; }
+  </style>
+</head>
+<body>
+
+<section class="tab-panel active" id="tab-main">
+  <h1>Main Tab</h1>
+  <nav class="sub-tabs">
+    <button class="sub-tab-btn active" onclick="showMainSubTab(0)">Scoreboard</button>
+    <button class="sub-tab-btn" onclick="showMainSubTab(1)">Comentaristas</button>
+    <button class="sub-tab-btn" onclick="showMainSubTab(2)">Comandos Twitch</button>
+    <button class="sub-tab-btn" onclick="showMainSubTab(3)">OBS</button>
+  </nav>
+
+  <div class="sub-tab-panel active" id="main-scoreboard">
+    <h2>Scoreboard Content</h2>
+    <p>This is the scoreboard section.</p>
+  </div>
+
+  <div class="sub-tab-panel" id="main-comentaristas">
+    <h2>Comentaristas Content</h2>
+    <p>This is the comentaristas section.</p>
+  </div>
+
+  <div class="sub-tab-panel" id="main-twitch">
+    <h2>Twitch Commands Content</h2>
+    <p>This is the twitch commands section.</p>
+  </div>
+
+  <div class="sub-tab-panel" id="main-obs">
+    <h2>OBS Content</h2>
+    <p>This is the OBS section.</p>
+  </div>
+</section>
+
+<script>
+function showMainSubTab(n) {
+  console.log('showMainSubTab called with:', n);
+  
+  const mainTab = document.getElementById('tab-main');
+  if (!mainTab) {
+    console.error('tab-main not found');
+    return;
+  }
+  
+  const buttons = mainTab.querySelectorAll('.sub-tab-btn');
+  const panels = mainTab.querySelectorAll('.sub-tab-panel');
+  
+  console.log('Found buttons:', buttons.length, 'panels:', panels.length);
+  
+  buttons.forEach((btn, i) => btn.classList.toggle('active', i === n));
+  panels.forEach((p, i) => p.classList.toggle('active', i === n));
+}
+
+// Test initialization
+document.addEventListener('DOMContentLoaded', function() {
+  showMainSubTab(0);
+});
+</script>
+
+</body>
+</html>

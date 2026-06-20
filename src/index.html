@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Streamcontrol MS</title>
+  <!-- Fuentes modernas -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <!-- Hoja de estilos principal -->
+  <link rel="stylesheet" href="css/scoreboard.css">
+  <link rel="stylesheet" href="css/bracket-visual.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/scoreboard-tab.css" id="css-scoreboard" disabled>
+  <link rel="stylesheet" href="css/bracket-tab.css" id="css-bracket" disabled>
+  <link rel="stylesheet" href="css/top8-tab.css" id="css-top8" disabled>
+  <link rel="stylesheet" href="css/startgg-tab.css" id="css-startgg" disabled>
+
+  <!-- Estilos modernos y cuadrados (Modificado por App UI Revamp Minimalista) -->
+  <link rel="stylesheet" href="css/theme-minimal.css">
+
+  <!-- Scripts para OBS y Twitch (Nativos de Frontend) -->
+  <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.2/dist/obs-ws.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tmi.js@1.8.5/tmi.min.js"></script>
+</head>
+
+<body>
+  <div class="main-flex-app" style="display: flex; flex-direction: row; align-items: stretch; height: 100vh; overflow: hidden;">
+    <div class="app-container" style="margin-right: 0;">
+      <!--
+NOTA: El error "No handler registered for 'set-obs-scene'" indica que falta implementar el handler 'set-obs-scene' en tu backend (main.js o proceso principal de Electron).
+Debes agregar algo como:
+
+ipcMain.handle('set-obs-scene', async (event, sceneName) => {
+  // Lógica para cambiar la escena en OBS
+});
+
+Haz lo mismo para los otros métodos relacionados si no existen.
+-->
+      <!-- =========================
+         HEADER DE TABS PRINCIPALES
+    ========================== -->
+      <nav id="tabs">
+        <button class="tab-btn active" id="tabBtnScoreboard" onclick="showTab(0)" title="Scoreboard">
+          <i class="fa fa-trophy"></i><span class="tab-label">Scoreboard</span>
+        </button>
+        <button class="tab-btn" id="tabBtnComentaristas" onclick="showTab(1)" title="Comentaristas">
+          <i class="fa fa-microphone"></i><span class="tab-label">Comentaristas</span>
+        </button>
+        <button class="tab-btn" id="tabBtnChallonge" onclick="showTab(2)" title="Challonge">
+          <img src="img/cha.png" alt="Challonge" class="tab-icon" style="height:1.1em;" /><span class="tab-label">Challonge</span>
+        </button>
+        <button class="tab-btn" id="tabBtnTwitch" onclick="showTab(3)" title="Twitch">
+          <img src="img/twitch.png" alt="Twitch" class="tab-icon" /><span class="tab-label">Twitch</span>
+        </button>
+        <button class="tab-btn" id="tabBtnStartgg" onclick="showTab(4)" title="Start.gg">
+          <img src="https://developer.start.gg/img/new_logo-white.svg" alt="Start.gg" class="tab-icon" /><span class="tab-label">Start.gg</span>
+        </button>
+        <div class="tab-actions-group">
+          <div class="tab-divider"></div>
+          <button class="tab-btn tab-btn-icon" id="tabBtnTheme" title="Cambiar tema" onclick="cycleTheme()">
+            <i class="fa fa-circle-half-stroke"></i>
+          </button>
+          <button class="tab-btn tab-btn-icon rutas-tab" id="tabBtnConfigure" onclick="showTab(5)" title="Configurar rutas">
+            <i class="fa fa-gear"></i>
+          </button>
+        </div>
+      </nav>
+      <!-- =========================
+       TAB 1: SCOREBOARD
+  ========================== -->
+      <section class="tab-panel active" id="tab-scoreboard">
+        <div class="scoreboard-main">
+          <!-- Jugador 1 integrado -->
+          <div class="sb-side">
+            <div class="sb-player-card-header"></div>
+            <img class="sb-player-img" id="p1CharImg"
+              src="https://static.wikia.nocookie.net/streetfighter/images/2/29/JuriSF6render.png" alt="Juri" />
+            <div class="sb-side-content">
+              <div style="position:relative; display:flex; flex-direction:column; align-items:center;">
+
+                <input class="sb-input sb-player-name sb-overlay-input-strong" id="p1NameInput" value="Jugador 1" />
+                <input class="sb-input sb-player-tag sb-overlay-input-light" id="p1TagInput" value="" placeholder="Team" />
+                <select class="sb-dropdown sb-flag-select" id="p1FlagSelect">
+                  <option value="cl" selected>Chile</option>
+                  <option value="ar">Argentina</option>
+                  <option value="mx">México</option>
+                  <option value="us">Estados Unidos</option>
+                  <option value="br">Brasil</option>
+                  <option value="jp">Japón</option>
+                  <!-- ... -->
+                </select>
+                <select class="sb-dropdown" id="p1CharSelect">
+                  <!-- Personajes se llenan dinámicamente -->
+                </select>
+                <select class="sb-dropdown moon-select" id="p1MoonSelect" style="display:none;">
+                  <option value="Full">🌕 Full Moon</option>
+                  <option value="Half">🌗 Half Moon</option>
+                  <option value="Crescent">🌙 Crescent Moon</option>
+                </select>
+                <!-- Selector de juego p1 eliminado de sb-side-content a petición del usuario -->
+              </div>
+            </div>
+            <div class="score-v-buttons">
+              <button class="sb-btn sb-btn-mini" onclick="changeScore(1,1)" title="+1"><i
+                  class="fa fa-plus"></i></button>
+              <button class="sb-btn sb-btn-mini" onclick="changeScore(1,-1)" title="-1"><i
+                  class="fa fa-minus"></i></button>
+            </div>
+          </div>
+
+          <!-- Centro: Evento y marcador -->
+          <div class="scoreboard-center">
+            <div class="sb-event" id="sbEvent" style="display:none">MOONSTYLE</div>
+            <input class="sb-round-input" id="sbRound" value="" placeholder="Ronda (ej: Winners Round 1)" />
+            <div class="sb-score-row">
+              <span id="p1Score" class="score-anim">0</span>
+              <span class="sb-score-sep">-</span>
+              <span id="p2Score" class="score-anim">0</span>
+            </div>
+            <div class="sb-btn-row" style="margin-bottom: 8px;">
+              <button class="sb-btn switch-btn" onclick="swap()" title="Intercambiar jugadores"><i
+                  class="fa fa-retweet"></i></button>
+              <button class="sb-btn save-btn" onclick="guardarScoreboard()" title="Guardar Scoreboard"
+                style="margin: 0 10px;"><i class="fa fa-save"></i></button>
+              <button class="sb-btn reset-btn" onclick="resetScores()" title="Resetear marcadores"><i
+                  class="fa fa-undo"></i></button>
+            </div>
+            <div style="display: flex; justify-content: center; margin-bottom: 8px;">
+              <select id="gameSel" class="game-select" onchange="cambiarJuego()" required>
+                <option value="" disabled hidden selected>Selecciona un juego</option>
+                <option value="UNI2">Under Night In-Birth II [Sys:Celes]</option>
+                <option value="VSAV">Vampire Savior (Darkstalkers 3)</option>
+                <option value="BBCF">BlazBlue: Central Fiction</option>
+                <option value="COTW">Fatal Fury: City of the Wolves</option>
+                <option value="GBVSR">Granblue Fantasy Versus: Rising</option>
+                <option value="GGST">Guilty Gear -Strive-</option>
+                <option value="HFTF">JoJo: Heritage for the Future</option>
+                <option value="MBAACC">Melty Blood: Actress Again Current Code</option>
+                <option value="MBTL">Melty Blood: Type Lumina</option>
+                <option value="SCON4">Super Naruto: Clash of Ninja 4</option>
+                <option value="SF3">Street Fighter III: 3rd Strike</option>
+                <option value="SF6">Street Fighter 6</option>
+                <option value="T8">Tekken 8</option>
+              </select>
+              <script>
+                // Mostrar/ocultar selectores de Moon según el juego
+                function toggleMoonSelectors() {
+                  const game = document.getElementById('gameSel').value;
+                  const show = (game === 'MBAACC');
+                  const p1Moon = document.getElementById('p1MoonSelect');
+                  const p2Moon = document.getElementById('p2MoonSelect');
+                  if (p1Moon) p1Moon.style.display = show ? '' : 'none';
+                  if (p2Moon) p2Moon.style.display = show ? '' : 'none';
+                }
+                document.getElementById('gameSel').addEventListener('change', toggleMoonSelectors);
+                window.addEventListener('DOMContentLoaded', toggleMoonSelectors);
+              </script>
+            </div>
+            <div class="sb-comm-row">
+              <span id="comm1"><i class="fa fa-microphone"></i> </span>
+              <span id="comm2"><i class="fa fa-microphone"></i> </span>
+            </div>
+          </div>
+
+          <!-- Jugador 2 integrado -->
+          <div class="sb-side right">
+            <div class="sb-player-card-header"></div>
+            <img class="sb-player-img" id="p2CharImg"
+              src="https://static.wikia.nocookie.net/streetfighter/images/1/1e/KenSF6render.png" alt="Ken" />
+            <div class="sb-side-content">
+              <div style="position:relative; display:flex; flex-direction:column; align-items:center;">
+                <input class="sb-input sb-player-name sb-overlay-input-strong" id="p2NameInput" value="Jugador 2" />
+                <input class="sb-input sb-player-tag sb-overlay-input-light" id="p2TagInput" value="" placeholder="Team" />
+                <select class="sb-dropdown sb-flag-select" id="p2FlagSelect">
+                  <option value="cl" selected>Chile</option>
+                  <option value="ar">Argentina</option>
+                  <option value="mx">México</option>
+                  <option value="us">Estados Unidos</option>
+                  <option value="br">Brasil</option>
+                  <option value="jp">Japón</option>
+                  <!-- ... -->
+                </select>
+                <select class="sb-dropdown" id="p2CharSelect">
+                  <!-- Personajes se llenan dinámicamente -->
+                </select>
+                <select class="sb-dropdown moon-select" id="p2MoonSelect" style="display:none;">
+                  <option value="Full">🌕 Full Moon</option>
+                  <option value="Half">🌗 Half Moon</option>
+                  <option value="Crescent">🌙 Crescent Moon</option>
+                </select>
+                <!-- Selector de juego p2 eliminado de sb-side-content a petición del usuario -->
+              </div>
+            </div>
+            <div class="score-v-buttons">
+              <button class="sb-btn sb-btn-mini" onclick="changeScore(2,1)" title="+1"><i
+                  class="fa fa-plus"></i></button>
+              <button class="sb-btn sb-btn-mini" onclick="changeScore(2,-1)" title="-1"><i
+                  class="fa fa-minus"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selector de juego eliminado de game-selector-wrapper a petición del usuario -->
+
+        <!-- Controles integrados eliminados, ahora están en el marcador principal -->
+      </section>
+
+      <!-- =========================
+       TAB 2: COMENTARISTAS
+  ========================== -->
+      <section class="tab-panel" id="tab-comentaristas">
+        <div class="panel-section">
+          <h2>Comentaristas</h2>
+          <div class="form-row">
+            <label for="com1Name">Comentarista #1:</label>
+            <input id="com1Name" class="sb-input" placeholder="Nombre comentarista 1">
+            <input id="com1Twitter" class="sb-input" placeholder="Twitter comentarista 1">
+          </div>
+          <div class="form-row">
+            <label for="com2Name">Comentarista #2:</label>
+            <input id="com2Name" class="sb-input" placeholder="Nombre comentarista 2">
+            <input id="com2Twitter" class="sb-input" placeholder="Twitter comentarista 2">
+          </div>
+          <div class="form-row" style="margin-top:1em; align-items:center;">
+            <label for="timerInput" style="margin-right:1em;">Temporizador (minutos):</label>
+            <input id="timerInput" type="number" min="0" class="sb-input" style="max-width:100px;">
+            <button class="sb-btn" onclick="fijarTimer()">Fijar Timer</button>
+            <button class="sb-btn btn-error" onclick="resetearTimer()">Resetear Timer</button>
+            <span id="msgTimer" class="msg-guardado"></span>
+          </div>
+          <div class="form-row" style="margin-top:1em;">
+            <div id="timerDisplay" class="text-warning" style="font-size:2em; font-weight:bold;">00:00</div>
+          </div>
+          <div class="form-row">
+            <button class="sb-btn" onclick="guardarComentaristas()">Guardar Comentaristas</button>
+            <span id="msgComentaristas" class="msg-guardado"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================
+       TAB 3: CHALLONGE
+  ========================== -->
+      <section class="tab-panel" id="tab-challonge">
+        <!-- Submenu de Challonge -->
+        <nav class="sub-tabs">
+          <button class="sub-tab-btn active" onclick="showChallongeSubTab(0)">Credenciales</button>
+          <button class="sub-tab-btn" onclick="showChallongeSubTab(1)">Bracket</button>
+          <button class="sub-tab-btn" onclick="showChallongeSubTab(2)">Top 8</button>
+        </nav>
+
+        <!-- Sub-tab 1: Credenciales -->
+        <div class="sub-tab-panel active" id="challonge-credenciales">
+          <!-- Sección Challonge -->
+          <div class="panel-section">
+            <h2>Challonge</h2>
+            <div class="form-row">
+              <input id="apikey" type="password" placeholder="Challonge API Key" class="sb-input">
+              <button class="sb-btn" onclick="guardarApiKey()">Guardar Key</button>
+              <span id="msgApi" class="sb-message"></span>
+            </div>
+            <div class="form-row">
+              <!-- <button class="sb-btn" onclick="buscarTorneosMatches()">Buscar Torneos</button> -->
+            </div>
+            <div class="form-row">
+              <select id="tournamentList" class="sb-select">
+                <option value="">Selecciona un torneo...</option>
+              </select>
+              <button class="sb-btn" onclick="cargarMatches()">Buscar Matches</button>
+              <span id="msgMatches" class="sb-message"></span>
+            </div>
+            <div class="form-row">
+              <select id="selectMatch" class="sb-select" style="display:none;"></select>
+            </div>
+            <div class="form-row" style="margin-top:1em;">
+              <div id="preview-match" class="preview-match" style="margin-bottom:1em;"></div>
+              <button class="sb-btn sb-btn-danger" onclick="confirmarYReportar()">Reportar resultado a
+                Challonge</button>
+              <span id="msgReportChallonge" class="sb-message"></span>
+            </div>
+          </div>
+          <!-- Sección Twitch Bot -->
+          <!-- (Twitch bot moved to new tab) -->
+        </div>
+
+        <!-- Sub-tab 2: Bracket -->
+        <div class="sub-tab-panel" id="challonge-bracket">
+          <div class="tab-content-center">
+            <div class="bracket-card-center">
+              <div style="display: flex; align-items: center; gap: 1em; margin-bottom:2em; ">
+                <select id="tournamentBracket" class="sb-select">
+                  <option value="">Selecciona un torneo...</option>
+                </select>
+                <button class="sb-btn" onclick="renderBracketVisual()">Mostrar Bracket Visual</button>
+              </div>
+              <div id="bracket-visual-container" class="bracket-visual-card"></div>
+            </div>
+            <div style="text-align:center; margin-top:20px;">
+              <button id="btnGuardarBracket" class="sb-btn btn-primary">Guardar Bracket</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-tab 3: Top 8 -->
+        <div class="sub-tab-panel" id="challonge-top8">
+          <div class="top8-wrapper">
+            <div class="top8-main-content">
+              <div class="top8-header" style="margin-top:1.5em; margin-bottom:1em; display:flex; align-items:center;">
+                <select id="tournamentTop8" class="sb-select" style="margin-left:0;">
+                  <option value="">Selecciona un torneo...</option>
+                </select>
+                <input type="date" id="fechaTop8" style="margin-left:1em; font-size:1em; padding:0.3em 0.7em;">
+              </div>
+              <table class="top8-table">
+                <thead>
+                  <tr>
+                    <th>Puesto</th>
+                    <th>Jugador</th>
+                    <th>Personaje</th>
+                    <th>Twitter</th>
+                  </tr>
+                </thead>
+                <tbody id="top8Table"></tbody>
+              </table>
+              <div class="top8-controls">
+                <button class="sb-btn" onclick="twittearMensaje()">Twittear mensaje</button>
+                <button class="sb-btn" onclick="guardarTop8()">Guardar Top 8</button>
+                <button class="sb-btn" onclick="generarMensajeTop8DesdeInputs()">Generar mensaje</button>
+              </div>
+              <div id="msgTop8Copy" class="msg-top8-copy"></div>
+              <span id="msgTop8" class="msg-top8"></span>
+            </div>
+            <!-- Caja de mensaje y botón copiar, a la derecha -->
+            <div class="top8-mensaje-box">
+              <textarea id="mensajeTop8Text" class="top8-mensaje-textarea" readonly></textarea>
+              <button class="sb-btn btn-secondary copiar-mensaje-btn"
+                style="font-weight:bold; font-size:1.1em; padding:0.7em 2em; border-radius:8px; margin-top:0.2em;"
+                onclick="copiarMensajeTop8()">Copiar mensaje</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================
+       TAB 4: TWITCH
+  ========================== -->
+      <section class="tab-panel" id="tab-twitch">
+        <!-- Sub-tabs para Twitch -->
+        <div class="twitch-subtabs">
+          <button class="twitch-subtab-btn active" id="twitchSubTabBtn0" onclick="showTwitchSubTab(0)">
+            <i class="fa fa-tv"></i> Stream
+          </button>
+          <button class="twitch-subtab-btn" id="twitchSubTabBtn1" onclick="showTwitchSubTab(1)">
+            <i class="fa fa-terminal"></i> Comandos
+          </button>
+          <button class="twitch-subtab-btn" id="twitchSubTabBtn2" onclick="showTwitchSubTab(2)">
+            <i class="fa fa-robot"></i> Nightbot
+          </button>
+          <button class="twitch-subtab-btn" id="twitchSubTabBtn3" onclick="showTwitchSubTab(3)">
+            <i class="fa fa-plug"></i> Conexión
+          </button>
+        </div>
+
+        <!-- Sub-tab 0: Stream viewer -->
+        <div class="twitch-subtab-panel active" id="twitchSubTabPanel0">
+          <div class="stream-viewer-bar">
+            <i class="fa fa-tv" style="color: #9147ff; font-size: 1.1em;"></i>
+            <input id="twitchStreamChannel" class="sb-input stream-channel-input"
+              placeholder="Nombre del canal (ej: summit1g)" />
+            <button class="sb-btn stream-load-btn" onclick="cargarStreamTwitch()">
+              <i class="fa fa-play"></i> Ver Stream
+            </button>
+            <button class="sb-btn stream-chat-toggle-btn" id="streamChatToggleBtn" onclick="toggleTwitchChat()" title="Mostrar/ocultar chat">
+              <i class="fa fa-comments"></i>
+            </button>
+          </div>
+          <div class="stream-embed-container" id="streamEmbedContainer">
+            <div class="stream-placeholder" id="streamPlaceholder">
+              <i class="fa fa-twitch" style="font-size:3em; color:#9147ff; margin-bottom:0.5em;"></i>
+              <p>Ingresa un canal y presiona <strong>Ver Stream</strong></p>
+            </div>
+            <div class="stream-webview-wrap" id="streamWebviewWrap" style="display:none;">
+              <webview id="twitchStreamWebview" class="stream-webview" allowpopups></webview>
+              <webview id="twitchChatWebview" class="stream-chat-webview" allowpopups></webview>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-tab 1: Comandos (antes era 0) -->
+        <div class="twitch-subtab-panel" id="twitchSubTabPanel1">
+          <div class="panel-section">
+            <h2>Comandos Rápidos de Twitch Bot</h2>
+            <div class="form-row">
+              <button class="sb-btn" onclick="enviarBracketBot()">!bracket</button>
+              <button class="sb-btn" onclick="enviarComandoBot('!score')">!score</button>
+              <button class="sb-btn" onclick="enviarComandoBot('!top8')">!top8</button>
+            </div>
+            <div class="form-row">
+              <input id="twitchCustomMsg" placeholder="Mensaje personalizado..." class="sb-input">
+              <button class="sb-btn" onclick="enviarComandoBot(document.getElementById('twitchCustomMsg').value)">Enviar
+                Custom</button>
+            </div>
+          </div>
+        </div>
+        <!-- Sub-tab 2: Nightbot (antes era 1) -->
+        <div class="twitch-subtab-panel" id="twitchSubTabPanel2">
+          <div class="panel-section">
+            <h2>Nightbot: Setear Comando Custom</h2>
+            <details style="margin-bottom:10px;">
+              <summary style="cursor:pointer;font-weight:500;">Generar Token OAuth</summary>
+              <div class="form-row"
+                style="flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:10px; margin-top:10px;">
+                <input id="nbClientId" placeholder="Client ID" class="sb-input">
+                <input id="nbRedirectUri" placeholder="Redirect URI" value="http://localhost" class="sb-input">
+                <button class="sb-btn" onclick="generarNightbotAuthUrl()">Generar URL de autorización</button>
+              </div>
+              <div id="nbAuthUrl" style="margin:8px 0 8px 0;word-break:break-all;"></div>
+              <div class="form-row" style="flex-wrap:wrap; gap:10px; align-items:flex-end; margin-top:10px;">
+                <input id="nbClientSecret" placeholder="Client Secret" class="sb-input">
+                <input id="nbAuthCode" placeholder="Code recibido" class="sb-input">
+                <button class="sb-btn btn-success" onclick="obtenerYGuardarNightbotToken()">Obtener y guardar
+                  token</button>
+              </div>
+              <div class="form-row" style="margin:0;">
+                <span id="nbJsonMsg" class="sb-message"></span>
+              </div>
+            </details>
+            <div class="form-row">
+              <input id="nightbotToken" type="password" placeholder="Token OAuth de Nightbot" class="sb-input">
+              <button class="sb-btn" style="margin-left:8px;" onclick="guardarNightbotTokenManual()">Guardar
+                token</button>
+            </div>
+            <div class="form-row">
+              <input id="nightbotCommand" placeholder="Comando (ej: !miinfo)" class="sb-input">
+              <input id="nightbotResponse" placeholder="Respuesta del comando" class="sb-input">
+              <button class="sb-btn" onclick="setNightbotCommand()">Setear</button>
+            </div>
+            <div class="form-row">
+              <span id="msgNightbot" class="sb-message"></span>
+            </div>
+            <div class="form-row text-muted" style="font-size:0.95em; margin-top:8px;">
+              Requiere que tu canal tenga Nightbot y el bot esté moderador.<br>
+              El token OAuth se obtiene en <a href="https://nightbot.tv/account" target="_blank">nightbot.tv/account</a>
+              &rarr; API Docs.<br>
+              <b>¡No compartas tu token con nadie!</b><br>
+              <a href="https://nightbot.tv/commands/custom" target="_blank">Gestionar comandos en nightbot.tv</a>
+            </div>
+          </div>
+        </div>
+        <!-- Sub-tab 3: Conexión (antes era 2) -->
+        <div class="twitch-subtab-panel" id="twitchSubTabPanel3">
+          <div class="panel-section">
+            <h2><img src="img/twitch.png" alt="Twitch"
+                style="height:1.3em;vertical-align:middle; margin-right:0.5em;" />Conectar bot a Twitch</h2>
+            <div class="form-row">
+              <input id="twitchUser" placeholder="Usuario de Twitch" class="sb-input">
+              <input id="twitchOAuth" type="password" placeholder="OAuth: oauth:xxxx..." class="sb-input">
+              <input id="twitchChannel" placeholder="Canal (sin #)" class="sb-input">
+              <button class="sb-btn" onclick="conectarTwitchBot()">Conectar</button>
+              <span id="msgTwitch" class="sb-message"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================
+       TAB 5: START.GG
+  ========================== -->
+      <section class="tab-panel" id="tab-startgg">
+        <div class="panel-section" style="max-width:900px; margin:2em auto;">
+          <h2 style="margin-bottom:0.7em; letter-spacing:1px; display:flex; align-items:center; gap:0.7em;">
+            <img src="https://developer.start.gg/img/new_logo-white.svg" alt="Start.gg"
+              style="height:1.3em;vertical-align:middle;" />
+          </h2>
+          <div class="form-row" style="margin-bottom:1.2em; gap:1em; flex-wrap:wrap; align-items:center;">
+            <label for="startggSlug" class="text-muted" style="margin-right:1em; font-size:1.08em;">Slug o
+              búsqueda:</label>
+            <input id="startggSlug" class="sb-input"
+              placeholder="Ej: tournament/mi-torneo/event/singles o palabras clave"
+              style="font-size:1.08em;">
+            <button class="sb-btn btn-secondary"
+              style="font-weight:bold; font-size:1.08em; border-radius:7px; padding:0.5em 1.5em;"
+              onclick="buscarStartGG()"><i class="fa fa-search"></i> Buscar</button>
+          </div>
+          <div class="form-row" style="margin-bottom:1.2em; gap:1em; flex-wrap:wrap; align-items:center;">
+            <label for="startggToken" class="text-muted" style="margin-right:1em; font-size:1.08em;">Token
+              Start.gg:</label>
+            <input id="startggToken" class="sb-input" type="password" placeholder="Token start.gg"
+              style="font-size:1.08em;">
+            <button class="sb-btn btn-success"
+              style="font-weight:bold; font-size:1.08em; border-radius:7px; padding:0.5em 1.5em;"
+              onclick="guardarStartggToken()"><i class="fa fa-key"></i> Guardar Token</button>
+            <span id="msgStartggToken" class="sb-message"></span>
+          </div>
+          <div class="form-row" style="margin-bottom:1em;">
+            <span class="text-muted" style="font-size:1em;">Puedes buscar por nombre de torneo, slug, o pegar la ruta
+              completa de un evento.<br>
+              Ejemplo: <b>tournament/never-give-up-2024/events</b> o <b>Blood Veil Overdrive</b></span>
+          </div>
+          <div class="form-row" style="margin-bottom:1em;">
+            <span class="text-warning" style="font-size:1em;">Los resultados mostrarán el estado de cada torneo y
+              evento.<br>
+              Si el evento está terminado, podrás generar el Top 8 automáticamente.</span>
+          </div>
+          <div id="startggResults" class="sgg-eventos-list" style="margin-top:2em; min-height:120px;"></div>
+        </div>
+      </section>
+
+      <!-- =========================
+       TAB 5: CONFIGURAR RUTAS
+  ========================== -->
+      <section class="tab-panel" id="tab-configure">
+        <fieldset class="panel-section" style="max-width:600px; margin:2em auto 2.5em auto;">
+          <legend style="font-size:1.3em; font-weight:bold; padding:0 0.7em;">Configurar rutas de archivos</legend>
+          <div class="text-muted" style="margin-bottom:1.5em; font-size:1em;">
+            Selecciona la ubicación de cada archivo JSON que utiliza la aplicación.<br>
+            Puedes dejar una ruta vacía para usar la ubicación por defecto.
+          </div>
+          <div class="form-row" style="margin-bottom:1.2em; align-items:center;">
+            <label for="rutaScoreboard" style="min-width:160px;">Scoreboard JSON:</label>
+            <input id="rutaScoreboard" class="sb-input" readonly>
+            <button class="sb-btn" onclick="elegirRuta('scoreboard')">Elegir...</button>
+          </div>
+          <div class="form-row" style="margin-bottom:1.2em; align-items:center;">
+            <label for="rutaCasters" style="min-width:160px;">Casters JSON:</label>
+            <input id="rutaCasters" class="sb-input" readonly>
+            <button class="sb-btn" onclick="elegirRuta('casters')">Elegir...</button>
+          </div>
+          <div class="form-row" style="margin-bottom:1.2em; align-items:center;">
+            <label for="rutaTimestamp" style="min-width:160px;">Timestamp JSON:</label>
+            <input id="rutaTimestamp" class="sb-input" readonly>
+            <button class="sb-btn" onclick="elegirRuta('timestamp')">Elegir...</button>
+          </div>
+          <div class="form-row" style="margin-bottom:1.2em; align-items:center;">
+            <label for="rutaBracket" style="min-width:160px;">Bracket JSON:</label>
+            <input id="rutaBracket" class="sb-input" readonly>
+            <button class="sb-btn" onclick="elegirRuta('bracket')">Elegir...</button>
+          </div>
+          <div class="form-row" style="margin-bottom:1.2em; align-items:center;">
+            <label for="rutaTop8" style="min-width:160px;">Top8 JSON:</label>
+            <input id="rutaTop8" class="sb-input" readonly>
+            <button class="sb-btn" onclick="elegirRuta('top8')">Elegir...</button>
+          </div>
+          <div class="form-row" style="margin-bottom:1.2em; align-items:center;">
+            <label for="rutaApiKey" style="min-width:160px;">API Key JSON:</label>
+            <input id="rutaApiKey" class="sb-input" readonly>
+            <button class="sb-btn" onclick="elegirRuta('apikey')">Elegir...</button>
+          </div>
+          <div class="form-row" style="margin-bottom:1.7em; align-items:center;">
+            <label for="rutaUsuarios" style="min-width:160px;">Usuarios TXT:</label>
+            <input id="rutaUsuarios" class="sb-input" readonly>
+            <button class="sb-btn" onclick="elegirRuta('usuarios')">Elegir...</button>
+          </div>
+          <div class="form-row" style="justify-content: flex-end;">
+            <button class="sb-btn" onclick="guardarTodasLasRutas()">Guardar todo</button>
+          </div>
+        </fieldset>
+      </section>
+
+
+
+    </div> <!-- Cierre del app-container -->
+
+    <!-- Script principal de la app -->
+    <script src="js/scoreboard.js"></script>
+    <script src="js/bracket-visual.js"></script>
+    <script src="js/startgg.js"></script>
+    <script>
+      function toggleControls() {
+        const controls = document.querySelector('.scoreboard-flex-row');
+        const button = document.getElementById('controls-toggle-btn');
+        controls.classList.toggle('hidden');
+        if (controls.classList.contains('hidden')) {
+          button.textContent = 'Mostrar Controles';
+        } else {
+          button.textContent = 'Ocultar Controles';
+        }
+      }
+    </script>
+    <!-- Contenedor global de notificaciones -->
+    <div id="notificaciones-app"></div>
+
+
+
+    <!-- Widget flotante con tabs para Start.gg y Challonge (único, sin duplicados) -->
+    <!-- Botón de colapso (visible cuando el widget está oculto) -->
+    <button id="widgetCollapseTab" class="widget-collapse-tab" onclick="toggleTournamentWidget()" title="Mostrar panel de torneos" style="display:none;">
+      <i class="fa fa-chevron-left"></i>
+      <span class="widget-collapse-label">Torneos</span>
+    </button>
+
+    <div id="tournamentFloatingWidget"
+      style="display:block; min-width:260px; max-width:360px; width:100%; margin-left:12px; box-shadow:0 0 16px #0005; position:static; height:100%; background:var(--bg-secondary); overflow-y:auto; z-index:1000; flex-shrink:0;">
+      <div class="floating-widget-header" style="padding: 0; flex-direction: column; align-items: stretch;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 0 16px;">
+          <div class="widget-title">
+            <i class="fa fa-gamepad"></i> Torneos
+          </div>
+          <button class="widget-toggle-btn" onclick="toggleTournamentWidget()" title="Colapsar panel">
+            <i class="fa fa-chevron-right"></i>
+          </button>
+        </div>
+        <nav style="display: flex; gap: 0; border-bottom: 1px solid var(--border-color); margin-top: 10px;">
+          <button class="tab-btn widget-tab-btn active" id="tabBtnStartggWidget" onclick="showTournamentWidgetTab(0)"
+            style="flex:1; border-radius: 0; border-bottom: none; font-size: 1em; padding: 10px 0;">
+            <img src="https://developer.start.gg/img/new_logo-white.svg" alt="Start.gg"
+              style="height:1.3em;vertical-align:middle;" />
+          </button>
+          <button class="tab-btn widget-tab-btn" id="tabBtnChallongeWidget" onclick="showTournamentWidgetTab(1)"
+            style="flex:1; border-radius: 0; border-bottom: none; font-size: 1em; padding: 10px 0;">
+            <img src="img/cha.png" alt="Challonge" style="height:1.7em; display:block; margin:0 auto;" />
+          </button>
+        </nav>
+      </div>
+      <div class="floating-widget-content" style="padding:0;">
+        <!-- Start.gg tab content -->
+        <div id="tournamentWidgetPanelStartgg" class="widget-tab-panel active" style="padding: 16px;">
+          <div class="widget-selector-row">
+            <input id="startggTournamentInput" class="widget-select" placeholder="Buscar torneo..."
+              style="width:90%; margin-bottom:10px;" onkeydown="if(event.key==='Enter'){buscarStartggDesdeWidget();}" />
+            <button class="sb-btn" style="width:90%; margin-bottom:10px;" onclick="buscarStartggDesdeWidget()"><i
+                class="fa fa-search"></i> Buscar</button>
+            <select id="startggTournamentSelector" class="widget-select" onchange="cargarEventosDelTorneo()">
+              <option value="">Selecciona un torneo...</option>
+            </select>
+          </div>
+          <div class="widget-selector-row">
+            <select id="startggEventSelector" class="widget-select" onchange="cargarMatchesDelEvento()"
+              style="display:none;">
+              <option value="">Selecciona un evento...</option>
+            </select>
+          </div>
+          <div class="widget-selector-row">
+            <select id="startggMatchSelector" class="widget-select" style="display:none;">
+              <option value="">Selecciona un match...</option>
+            </select>
+            <div id="matchLoadingBar" class="widget-loading-bar" style="display:none;">
+              <div class="loading-bar-fill"></div>
+              <span class="loading-text">Cargando matches...</span>
+            </div>
+          </div>
+          <div class="widget-buttons-row">
+            <button class="widget-btn load-btn" onclick="cargarMatchStartggEnScoreboard()"
+              title="Cargar match en scoreboard">
+              <i class="fa fa-upload"></i> Cargar
+            </button>
+            <button class="widget-btn update-btn" onclick="actualizarMatchesStartggEnScoreboard()"
+              title="Actualizar matches">
+              <i class="fa fa-refresh"></i> Actualizar
+            </button>
+            <button class="widget-btn bracket-btn" onclick="guardarBracketStartggDesdeWidget()"
+              title="Guardar bracket completo">
+              <i class="fa fa-sitemap"></i> Bracket
+            </button>
+            <button class="widget-btn top8-btn" onclick="mostrarTop8StartggDesdeWidget()" title="Ver Top 8 del evento">
+              <i class="fa fa-list-ol"></i> Top 8
+            </button>
+          </div>
+          <!-- Panel de Top 8 (inicialmente oculto) -->
+          <div id="startggTop8Panel" class="widget-top8-panel"
+            style="display:none; margin-top:15px; border-radius:8px; padding:15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h4 style="margin:0; font-size:1.1em;" class="text-warning">
+                <i class="fa fa-trophy"></i> Top 8 - <span id="startggTop8EventName">Evento</span>
+              </h4>
+              <button onclick="cerrarTop8StartggWidget()"
+                style="background:none; border:none; font-size:1.2em; cursor:pointer;" class="text-muted"
+                title="Cerrar Top 8">×</button>
+            </div>
+            <div id="startggTop8Content" style="max-height:300px; overflow-y:auto;">
+              <div style="text-align:center; padding:20px;" class="text-muted">
+                Selecciona un evento para ver el Top 8
+              </div>
+            </div>
+            <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="sb-btn btn-secondary" onclick="copiarTop8StartggWidget()"
+                style="font-size:0.9em; padding:6px 12px;">
+                <i class="fa fa-copy"></i> Copiar
+              </button>
+              <button class="sb-btn btn-success" onclick="guardarTop8StartggWidget()"
+                style="font-size:0.9em; padding:6px 12px;">
+                <i class="fa fa-save"></i> Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Challonge tab content -->
+        <div id="tournamentWidgetPanelChallonge" class="widget-tab-panel" style="padding: 16px;">
+          <div class="widget-selector-row">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+              <input id="challongeTournamentInput" class="widget-select"
+                placeholder="Buscar por nombre o slug (ej: mi-torneo-2024)..." style="flex: 1;"
+                onkeydown="if(event.key==='Enter'){buscarChallongeDesdeWidget();}" />
+              <button class="sb-btn" onclick="cargarTorneosDesdeWidget()" title="Cargar todos los torneos de tu API"
+                style="padding: 8px 12px; min-width: auto;">
+                <i class="fa fa-user"></i>
+              </button>
+            </div>
+            <div style="font-size: 10px;" class="text-muted"
+              style="margin-bottom: 8px; text-align: center; padding: 0 5%;">
+              💡 Usa el slug del torneo para búsqueda directa o el icono de usuario para cargar todos tus torneos
+            </div>
+            <button class="sb-btn" style="width:90%; margin-bottom:10px;" onclick="buscarChallongeDesdeWidget()"><i
+                class="fa fa-search"></i> Buscar</button>
+            <select id="challongeTournamentSelector" class="widget-select"
+              onchange="cargarMatchesChallongeDesdeWidget()">
+              <option value="">Selecciona un torneo...</option>
+            </select>
+          </div>
+          <div class="widget-selector-row">
+            <select id="challongeMatchSelector" class="widget-select" style="display:none;">
+              <option value="">Selecciona un match...</option>
+            </select>
+            <div id="challongeMatchLoadingBar" class="widget-loading-bar" style="display:none;">
+              <div class="loading-bar-fill"></div>
+              <span class="loading-text">Cargando matches...</span>
+            </div>
+          </div>
+          <div class="widget-buttons-row">
+            <button class="widget-btn load-btn" onclick="cargarMatchChallongeEnScoreboard()"
+              title="Cargar match en scoreboard">
+              <i class="fa fa-upload"></i> Cargar
+            </button>
+            <button class="widget-btn update-btn" onclick="actualizarMatchesChallongeEnScoreboard()"
+              title="Actualizar matches">
+              <i class="fa fa-refresh"></i> Actualizar
+            </button>
+            <button class="widget-btn bracket-btn" onclick="guardarBracketChallongeDesdeWidget()"
+              title="Guardar bracket completo siguiendo esquema Start.gg">
+              <i class="fa fa-sitemap"></i> Bracket
+            </button>
+            <button class="widget-btn top8-btn btn-error" onclick="mostrarTop8ChallongeDesdeWidget()"
+              title="Ver Top 8 del torneo">
+              <i class="fa fa-trophy"></i> Top 8
+            </button>
+          </div>
+
+          <!-- Panel de Top 8 de Challonge (inicialmente oculto) -->
+          <div id="challongeTop8Panel" class="top8-ch-panel" style="display:none; margin-top:15px;">
+            <div class="top8-ch-header">
+              <h4 class="top8-ch-title">
+                <i class="fa fa-trophy"></i> Top 8 - <span id="challongeTop8TournamentName">Torneo</span>
+              </h4>
+              <button onclick="cerrarTop8ChallongeWidget()" class="top8-ch-close" title="Cerrar Top 8">
+                <i class="fa fa-times"></i>
+              </button>
+            </div>
+            <div id="challongeTop8Content">
+              <!-- El contenido del Top 8 se cargará aquí -->
+            </div>
+            <div style="display:flex; gap:8px; margin-top:10px; justify-content:center;">
+              <button class="sb-btn btn-secondary" onclick="copiarTop8ChallongeWidget()"
+                style="font-size:0.9em; padding:6px 12px;">
+                <i class="fa fa-copy"></i> Copiar
+              </button>
+              <button class="sb-btn btn-success" onclick="guardarTop8ChallongeWidget()"
+                style="font-size:0.9em; padding:6px 12px;">
+                <i class="fa fa-save"></i> Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Tab switching logic for floating widget
+      function showTournamentWidgetTab(idx) {
+        const btns = [document.getElementById('tabBtnStartggWidget'), document.getElementById('tabBtnChallongeWidget')];
+        const panels = [document.getElementById('tournamentWidgetPanelStartgg'), document.getElementById('tournamentWidgetPanelChallonge')];
+        btns.forEach((b, i) => b.classList.toggle('active', i === idx));
+        panels.forEach((p, i) => p.classList.toggle('active', i === idx));
+        // Enfocar el input correcto al cambiar de tab
+        setTimeout(() => {
+          if (idx === 0) {
+            const input = document.getElementById('startggTournamentInput');
+            if (input) input.focus();
+          } else {
+            const input = document.getElementById('challongeTournamentInput');
+            if (input) input.focus();
+          }
+        }, 50);
+      }
+
+      // === RECORDAR ÚLTIMOS VALORES DE WIDGETS ===
+      function saveWidgetState() {
+        // Start.gg
+        localStorage.setItem('startggTournamentInput', document.getElementById('startggTournamentInput')?.value || '');
+        localStorage.setItem('startggTournamentSelector', document.getElementById('startggTournamentSelector')?.value || '');
+        localStorage.setItem('startggEventSelector', document.getElementById('startggEventSelector')?.value || '');
+        localStorage.setItem('startggMatchSelector', document.getElementById('startggMatchSelector')?.value || '');
+        // Challonge
+        localStorage.setItem('challongeTournamentInput', document.getElementById('challongeTournamentInput')?.value || '');
+        localStorage.setItem('challongeTournamentSelector', document.getElementById('challongeTournamentSelector')?.value || '');
+        localStorage.setItem('challongeMatchSelector', document.getElementById('challongeMatchSelector')?.value || '');
+      }
+
+      function restoreWidgetState() {
+        // Start.gg
+        const sggInput = localStorage.getItem('startggTournamentInput') || '';
+        const sggTourn = localStorage.getItem('startggTournamentSelector') || '';
+        const sggEvent = localStorage.getItem('startggEventSelector') || '';
+        const sggMatch = localStorage.getItem('startggMatchSelector') || '';
+        if (document.getElementById('startggTournamentInput')) document.getElementById('startggTournamentInput').value = sggInput;
+        if (document.getElementById('startggTournamentSelector')) document.getElementById('startggTournamentSelector').value = sggTourn;
+        if (document.getElementById('startggEventSelector')) document.getElementById('startggEventSelector').value = sggEvent;
+        if (document.getElementById('startggMatchSelector')) document.getElementById('startggMatchSelector').value = sggMatch;
+        // Challonge
+        const chInput = localStorage.getItem('challongeTournamentInput') || '';
+        const chTourn = localStorage.getItem('challongeTournamentSelector') || '';
+        const chMatch = localStorage.getItem('challongeMatchSelector') || '';
+        if (document.getElementById('challongeTournamentInput')) document.getElementById('challongeTournamentInput').value = chInput;
+        if (document.getElementById('challongeTournamentSelector')) document.getElementById('challongeTournamentSelector').value = chTourn;
+        if (document.getElementById('challongeMatchSelector')) document.getElementById('challongeMatchSelector').value = chMatch;
+      }
+
+      // Guardar estado al cambiar los inputs/selects relevantes
+      window.addEventListener('DOMContentLoaded', function () {
+        restoreWidgetState();
+        [
+          'startggTournamentInput', 'startggTournamentSelector', 'startggEventSelector', 'startggMatchSelector',
+          'challongeTournamentInput', 'challongeTournamentSelector', 'challongeMatchSelector'
+        ].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.addEventListener('change', saveWidgetState);
+          if (el) el.addEventListener('input', saveWidgetState);
+        });
+      });
+      function cerrarTournamentWidget() {
+        toggleTournamentWidget();
+      }
+
+      function toggleTournamentWidget() {
+        const widget = document.getElementById('tournamentFloatingWidget');
+        const collapseTab = document.getElementById('widgetCollapseTab');
+        const isVisible = widget.style.display !== 'none';
+        widget.style.display = isVisible ? 'none' : 'block';
+        collapseTab.style.display = isVisible ? 'flex' : 'none';
+        try { localStorage.setItem('widget-collapsed', isVisible ? '1' : '0'); } catch(_) {}
+      }
+
+      // Restaurar estado al cargar
+      window.addEventListener('DOMContentLoaded', function() {
+        try {
+          if (localStorage.getItem('widget-collapsed') === '1') {
+            document.getElementById('tournamentFloatingWidget').style.display = 'none';
+            document.getElementById('widgetCollapseTab').style.display = 'flex';
+          }
+        } catch(_) {}
+      });
+      // === CHALLONGE WIDGET ===
+      async function buscarChallongeDesdeWidget() {
+        const input = document.getElementById('challongeTournamentInput');
+        const selector = document.getElementById('challongeTournamentSelector');
+        if (!input || !selector) return;
+
+        const query = input.value.trim().toLowerCase();
+        selector.innerHTML = '<option value="">Buscando torneos...</option>';
+
+        try {
+          // Si el query parece ser un slug (sin espacios y con guiones), buscar directamente
+          if (query && !query.includes(' ') && (query.includes('-') || query.includes('_'))) {
+            // Intentar buscar directamente por slug
+            try {
+              const slugRes = await window.__TAURI__.core.invoke('get-matches-and-participants', { slug: query });
+              if (slugRes.ok && slugRes.tournament_name) {
+                // Si encontramos el torneo por slug, agregarlo directamente
+                selector.innerHTML = '<option value="">Selecciona un torneo...</option>';
+                const opt = document.createElement('option');
+                opt.value = query;
+                opt.textContent = `🎯 ${slugRes.tournament_name} (encontrado por slug)`;
+                opt.selected = true; // Seleccionar automáticamente
+                selector.appendChild(opt);
+
+                // Mostrar notificación de éxito
+                if (window.mostrarNotificacion) {
+                  window.mostrarNotificacion(`✅ Torneo encontrado: ${slugRes.tournament_name}`, 'success');
+                }
+
+                // Cargar automáticamente los matches
+                setTimeout(() => cargarMatchesChallongeDesdeWidget(), 500);
+                return;
+              }
+            } catch (slugError) {
+              // Si falla la búsqueda por slug, continuar con búsqueda normal
+              console.log('Slug no encontrado, buscando en lista general...');
+            }
+          }
+
+          // Búsqueda normal en la lista de torneos
+          const res = await window.__TAURI__.core.invoke('get-tournaments');
+          if (!res.ok) throw new Error(res.error || 'Error al obtener torneos');
+
+          let torneos = res.tournaments || [];
+
+          // Filtrar por nombre si hay query
+          if (query) {
+            torneos = torneos.filter(t =>
+              t.name.toLowerCase().includes(query) ||
+              t.url.toLowerCase().includes(query)
+            );
+          }
+
+          if (!torneos.length) {
+            selector.innerHTML = '<option value="">No se encontraron torneos</option>';
+            if (window.mostrarNotificacion) {
+              window.mostrarNotificacion(`❌ No se encontraron torneos para: "${query}"`, 'error');
+            }
+            return;
+          }
+
+          selector.innerHTML = '<option value="">Selecciona un torneo...</option>';
+          torneos.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.url;
+            opt.textContent = t.name + (t.state ? ` (${t.state})` : '');
+            selector.appendChild(opt);
+          });
+
+          if (window.mostrarNotificacion) {
+            window.mostrarNotificacion(`✅ Encontrados ${torneos.length} torneo(s)`, 'success');
+          }
+
+        } catch (e) {
+          selector.innerHTML = `<option value="">❌ ${e.message}</option>`;
+          if (window.mostrarNotificacion) {
+            window.mostrarNotificacion(`❌ Error: ${e.message}`, 'error');
+          }
+        }
+      }
+
+      async function cargarMatchesChallongeDesdeWidget() {
+        const selector = document.getElementById('challongeTournamentSelector');
+        const matchSelector = document.getElementById('challongeMatchSelector');
+        const loadingBar = document.getElementById('challongeMatchLoadingBar');
+        if (!selector || !matchSelector || !loadingBar) return;
+        const slug = selector.value;
+        if (!slug) {
+          matchSelector.style.display = 'none';
+          loadingBar.style.display = 'none';
+          matchSelector.innerHTML = '<option value="">Selecciona un match...</option>';
+          return;
+        }
+        matchSelector.style.display = 'none';
+        loadingBar.style.display = 'block';
+        try {
+          const res = await window.__TAURI__.core.invoke('get-matches-and-participants', { slug });
+          if (!res.ok || !res.matches) throw new Error(res.error || 'No se pudieron obtener matches');
+
+          // Guardar número de participantes para cálculos de estructura en el widget
+          if (typeof window.tournamentParticipantsCount !== 'undefined') {
+            window.tournamentParticipantsCount = res.participantsCount || res.participantes?.length || 0;
+            console.log('🎮 [WIDGET] Participantes guardados:', window.tournamentParticipantsCount);
+          }
+
+          // Solo matches abiertos y con jugadores asignados
+          const matches = res.matches.filter(m => m.player1_name && m.player2_name && m.player1_name !== 'TBD' && m.player2_name !== 'TBD' && !m.winner_id);
+          if (!matches.length) {
+            matchSelector.innerHTML = '<option value="">No hay matches abiertos</option>';
+            matchSelector.style.display = 'block';
+            loadingBar.style.display = 'none';
+            return;
+          }
+          matchSelector.innerHTML = '<option value="">Selecciona un match...</option>';
+          matches.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = `${m.player1_name} vs ${m.player2_name} (Ronda ${m.round || ''})`;
+            opt.dataset.match = JSON.stringify(m);
+            matchSelector.appendChild(opt);
+          });
+          matchSelector.style.display = 'block';
+          loadingBar.style.display = 'none';
+        } catch (e) {
+          matchSelector.innerHTML = `<option value="">❌ ${e.message}</option>`;
+          matchSelector.style.display = 'block';
+          loadingBar.style.display = 'none';
+        }
+      }
+
+      // Cargar todos los torneos de la API en el widget
+      async function cargarTorneosDesdeWidget() {
+        const selector = document.getElementById('challongeTournamentSelector');
+        if (!selector) return;
+
+        selector.innerHTML = '<option value="">Cargando torneos...</option>';
+
+        try {
+          const res = await window.__TAURI__.core.invoke('get-tournaments');
+          if (!res.ok) throw new Error(res.error || 'Error al obtener torneos');
+
+          const torneos = res.tournaments || [];
+
+          if (!torneos.length) {
+            selector.innerHTML = '<option value="">No se encontraron torneos</option>';
+            if (window.mostrarNotificacion) {
+              window.mostrarNotificacion('❌ No se encontraron torneos en tu cuenta', 'error');
+            }
+            return;
+          }
+
+          selector.innerHTML = '<option value="">Selecciona un torneo...</option>';
+          torneos.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.url;
+            opt.textContent = t.name + (t.state ? ` (${t.state})` : '');
+            selector.appendChild(opt);
+          });
+
+          if (window.mostrarNotificacion) {
+            window.mostrarNotificacion(`✅ Cargados ${torneos.length} torneo(s) de tu API`, 'success');
+          }
+
+        } catch (e) {
+          selector.innerHTML = `<option value="">❌ ${e.message}</option>`;
+          if (window.mostrarNotificacion) {
+            window.mostrarNotificacion(`❌ Error: ${e.message}`, 'error');
+          }
+        }
+      }
+
+      // === FUNCIONES TOP 8 CHALLONGE WIDGET ===
+      async function mostrarTop8ChallongeDesdeWidget() {
+        const tournamentSelector = document.getElementById('challongeTournamentSelector');
+        const panel = document.getElementById('challongeTop8Panel');
+        const content = document.getElementById('challongeTop8Content');
+        const tournamentNameSpan = document.getElementById('challongeTop8TournamentName');
+
+        if (!tournamentSelector.value) {
+          if (window.mostrarNotificacion) {
+            window.mostrarNotificacion("❌ Selecciona un torneo primero.", "error");
+          }
+          return;
+        }
+
+        // Mostrar el panel
+        panel.style.display = 'block';
+        content.innerHTML = '<div style="text-align:center; padding:20px;" class="text-muted"><i class="fa fa-spinner fa-spin"></i> Cargando Top 8...</div>';
+
+        // Obtener el nombre del torneo seleccionado
+        const tournamentName = tournamentSelector.options[tournamentSelector.selectedIndex].text;
+        tournamentNameSpan.textContent = tournamentName;
+
+        try {
+          // Siempre recargar personajes con el juego actual del scoreboard
+          const currentGame = document.getElementById('gameSel')?.value || 'GGST';
+          console.log('[ChallongeTop8Widget] Forzando recarga de personajes para juego:', currentGame);
+
+          try {
+            const personajesRes = await window.__TAURI__.core.invoke('get-personajes', { juegoFolder: currentGame });
+            if (personajesRes.personajes && personajesRes.personajes.length) {
+              window.listaPersonajes = personajesRes.personajes.map(p => p.nombre);
+              console.log('[ChallongeTop8Widget] Personajes cargados:', window.listaPersonajes.length, 'para juego:', currentGame);
+            } else {
+              window.listaPersonajes = [];
+              console.warn('[ChallongeTop8Widget] No se encontraron personajes para', currentGame);
+            }
+          } catch (e) {
+            console.warn('[ChallongeTop8Widget] Error al cargar personajes:', e);
+            window.listaPersonajes = [];
+          }
+
+          // Llamar a la función de Challonge para obtener el Top 8
+          const tournamentSlug = tournamentSelector.value;
+          console.log('[ChallongeTop8Widget] Cargando Top 8 para torneo:', tournamentSlug);
+
+          const response = await window.__TAURI__.core.invoke('get-top8', { slug: tournamentSlug });
+
+          console.log('[ChallongeTop8Widget] Respuesta completa de Challonge:', response);
+
+          if (response.error || !response.top8) {
+            content.innerHTML = `<div style="text-align:center; padding:20px;" class="text-error">❌ ${response.error || 'No se pudo obtener el Top 8'}</div>`;
+            return;
+          }
+
+          const top8Data = response.top8;
+          console.log('[ChallongeTop8Widget] Top 8 obtenido:', top8Data);
+
+          if (!top8Data || top8Data.length === 0) {
+            content.innerHTML = '<div style="text-align:center; padding:20px;" class="text-warning">⚠️ No hay suficientes participantes para un Top 8</div>';
+            return;
+          }
+
+          // Ordenar por ranking
+          top8Data.sort((a, b) => a.final_rank - b.final_rank);
+
+          // Generar HTML del Top 8
+          let html = '<div class="top8-ch-table-wrap">';
+          html += '<table class="top8-ch-table">';
+          html += '<thead><tr><th>Pos</th><th>Jugador</th><th>Personaje</th><th>Twitter</th></tr></thead>';
+          html += '<tbody>';
+
+          top8Data.forEach((player, idx) => {
+            html += `<tr>`;
+            html += `<td style="text-align:center; font-weight:bold;">${player.final_rank}</td>`;
+            html += `<td>${player.name}</td>`;
+            html += `<td>
+        <select id="challongeTop8Char${idx}" class="top8-ch-select">
+          ${(window.listaPersonajes || []).map(char => `<option value="${char}">${char}</option>`).join("")}
+        </select>
+      </td>`;
+            html += `<td>
+        <select id="challongeTop8Twitter${idx}" class="top8-ch-twitter">
+          <option value="">Seleccionar...</option>
+        </select>
+      </td>`;
+            html += '</tr>';
+          });
+
+          html += '</tbody></table></div>';
+          content.innerHTML = html;
+
+          // Llenar usuarios de Twitter desde archivo
+          try {
+            const usuariosRes = await window.__TAURI__.core.invoke('leer-usuarios-txt');
+            if (usuariosRes.ok && usuariosRes.usuarios) {
+              const usuariosOrdenados = usuariosRes.usuarios.slice().sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+
+              for (let i = 0; i < top8Data.length; i++) {
+                const twitterSelect = document.getElementById(`challongeTop8Twitter${i}`);
+                if (twitterSelect) {
+                  twitterSelect.innerHTML = '<option value="">Seleccionar...</option>';
+                  usuariosOrdenados.forEach(usuario => {
+                    const option = document.createElement('option');
+                    option.value = usuario;
+                    option.textContent = usuario;
+                    twitterSelect.appendChild(option);
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('[ChallongeTop8Widget] Error al cargar usuarios:', e);
+          }
+
+          // Guardar datos globalmente para las funciones de copiar/guardar
+          window.challongeTop8Data = {
+            tournament: tournamentName,
+            players: top8Data
+          };
+
+        } catch (error) {
+          console.error('[ChallongeTop8Widget] Error:', error);
+          content.innerHTML = `<div style="text-align:center; padding:20px;" class="text-error">❌ Error al cargar Top 8: ${error.message}</div>`;
+        }
+      }
+
+      function cerrarTop8ChallongeWidget() {
+        const panel = document.getElementById('challongeTop8Panel');
+        if (panel) panel.style.display = 'none';
+      }
+
+      function copiarTop8ChallongeWidget() {
+        if (!window.challongeTop8Data) {
+          if (window.mostrarNotificacion) {
+            window.mostrarNotificacion('❌ No hay datos de Top 8 para copiar', 'error');
+          }
+          return;
+        }
+
+        let mensaje = `Resultados ${window.challongeTop8Data.tournament}\n\n`;
+
+        window.challongeTop8Data.players.forEach((player, idx) => {
+          const twitterSelect = document.getElementById(`challongeTop8Twitter${idx}`);
+          let twitter = twitterSelect ? twitterSelect.value.trim() : '';
+
+          if (!twitter) {
+            twitter = '@' + player.name.replace(/\s/g, '_');
+          }
+          if (!twitter.startsWith('@')) twitter = '@' + twitter;
+
+          mensaje += `${player.final_rank}) ${twitter}\n`;
+        });
+
+        mensaje += `\n¡Gracias por participar!`;
+
+        // Copiar al portapapeles
+        navigator.clipboard.writeText(mensaje).then(() => {
+          if (window.mostrarNotificacion) {
+            window.mostrarNotificacion('✅ Top 8 copiado al portapapeles', 'success');
+          }
+        }).catch(err => {
+          console.error('Error al copiar:', err);
+          if (window.mostrarNotificacion) {
+            window.mostrarNotificacion('❌ Error al copiar al portapapeles', 'error');
+          }
+        });
+      }
+
+      async function guardarTop8ChallongeWidget() {
+        if (!window.challongeTop8Data) {
+          if (window.mostrarNotificacion) {
+            window.mostrarNotificacion('❌ No hay datos de Top 8 para guardar', 'error');
+          }
+          return;
+        }
+
+        const currentGame = document.getElementById('gameSel')?.value || 'GGST';
+        const top8ForSave = [];
+
+        window.challongeTop8Data.players.forEach((player, idx) => {
+          const charSelect = document.getElementById(`challongeTop8Char${idx}`);
+          const twitterSelect = document.getElementById(`challongeTop8Twitter${idx}`);
+
+          top8ForSave.push({
+            nombre: player.name,
+            personaje: charSelect ? charSelect.value : '',
+            juego: currentGame,
+            twitter: twitterSelect ? twitterSelect.value : ''
+          });
+        });
+
+        const dataToSave = {
+          evento: window.challongeTop8Data.tournament,
+          fecha: new Date().toLocaleDateString('es-CL'),
+          top8: top8ForSave
+        };
+
+        try {
+          const res = await window.__TAURI__.core.invoke('save-json', dataToSave, 'top8');
+          if (res.ok) {
+            if (window.mostrarNotificacion) {
+              window.mostrarNotificacion('✅ Top 8 guardado correctamente', 'success');
+            }
+          } else {
+            if (window.mostrarNotificacion) {
+              window.mostrarNotificacion('❌ Error al guardar Top 8', 'error');
+            }
+          }
+        } catch (error) {
+          console.error('Error al guardar Top 8:', error);
+          if (window.mostrarNotificacion) {
+            window.mostrarNotificacion('❌ Error al guardar Top 8', 'error');
+          }
+        }
+      }
+
+      // === FUNCIÓN ACTUALIZAR MATCHES CHALLONGE WIDGET ===
+      async function actualizarMatchesChallongeEnScoreboard() {
+        const tournamentSelector = document.getElementById('challongeTournamentSelector');
+
+        if (!tournamentSelector.value) {
+          if (window.mostrarNotificacion) {
+            window.mostrarNotificacion("❌ Selecciona un torneo primero.", "error");
+          }
+          return;
+        }
+
+        // Simplemente recargar los matches del torneo seleccionado
+        await cargarMatchesChallongeDesdeWidget();
+
+        if (window.mostrarNotificacion) {
+          window.mostrarNotificacion("🔄 Matches actualizados", "success");
+        }
+      }
+
+      // === FUNCIÓN BRACKET CHALLONGE WIDGET ===
+      async function guardarBracketChallongeDesdeWidget() {
+        const tournamentSelector = document.getElementById('challongeTournamentSelector');
+
+        if (!tournamentSelector.value) {
+          if (window.mostrarNotificacion) {
+            window.mostrarNotificacion("❌ Selecciona un torneo primero.", "error");
+          }
+          return;
+        }
+
+        const tournamentSlug = tournamentSelector.value;
+
+        try {
+          if (window.mostrarNotificacion) {
+            window.mostrarNotificacion("🔄 Generando bracket visual...", "info");
+          }
+
+          // Usar la misma lógica que renderBracketVisual pero para el widget
+          const res = await window.__TAURI__.core.invoke('get-all-matches-and-participants', { slug: tournamentSlug });
+          if (!res.ok || !res.matches || !res.matches.length) {
+            if (window.mostrarNotificacion) {
+              window.mostrarNotificacion('❌ No se encontraron matches para este torneo.', 'error');
+            }
+            return;
+          }
+
+          // Mapea IDs a nombres
+          const participantes = {};
+          (res.participantes || []).forEach(p => {
+            participantes[p.id] = p.name;
+          });
+
+          // Detecta el número de ronda más alto en winners
+          const winnerRounds = res.matches.filter(m => m.round > 0).map(m => m.round);
+          const maxWinnerRound = Math.max(...winnerRounds);
+          const rondas = {};
+          res.matches.forEach(m => {
+            const ronda = Number(m.round);
+            if (!rondas[ronda]) rondas[ronda] = [];
+            rondas[ronda].push(m);
+          });
+
+          // Detecta Grand Final y Reset
+          const grandFinalMatches = (rondas[maxWinnerRound] || []).filter(m => {
+            if (!m.scores_csv) return false;
+            const [s1, s2] = m.scores_csv.split('-').map(s => Number(s.trim() || '0'));
+            return s1 > 0 || s2 > 0;
+          });
+
+          // Asigna round_name a TODOS los matches siguiendo la lógica de Start.gg
+          const losersRounds = Object.keys(rondas).map(Number).filter(r => r < 0).sort((a, b) => a - b);
+          const matchesAll = res.matches.map(m => {
+            let p1sc = "0", p2sc = "0";
+            if (m.scores_csv && m.scores_csv.includes('-')) {
+              [p1sc, p2sc] = m.scores_csv.split('-').map(s => s.trim());
+            }
+            let round_name = "";
+            if (m.round === maxWinnerRound) {
+              if (grandFinalMatches.length === 2) {
+                const idx = rondas[maxWinnerRound].findIndex(x => x.id === m.id);
+                round_name = idx === 0 ? "Grand Final" : "Grand Final Reset";
+              } else {
+                round_name = "Grand Final";
+              }
+            } else if (m.round === maxWinnerRound - 1) {
+              round_name = "Winners Final";
+            } else if (m.round === maxWinnerRound - 2) {
+              round_name = "Winners Semis";
+            } else if (m.round < 0) {
+              // Losers: ordena de menos a más negativo (más antiguo a más reciente)
+              const sortedLosers = losersRounds.slice().sort((a, b) => a - b);
+              const idx = sortedLosers.indexOf(m.round);
+              const losersNames = [
+                "Losers Finals",
+                "Losers Semis",
+                "Losers Quarters",
+                "Losers Top 8"
+              ];
+              // El más negativo (idx 0) es "Losers Finals", el más cercano a 0 es "Losers Top 8"
+              round_name = losersNames[idx] || `Losers Ronda ${Math.abs(m.round)}`;
+            } else {
+              round_name = `Ronda ${m.round}`;
+            }
+            return {
+              ...m,
+              player1_sc: p1sc,
+              player2_sc: p2sc,
+              round_name
+            };
+          });
+
+          // Guardar bracket JSON con el esquema de Start.gg
+          const bracketData = {
+            torneo: tournamentSlug,
+            fecha: new Date().toLocaleDateString(),
+            matches: matchesAll,
+            participantes: participantes
+          };
+
+          const saveRes = await window.__TAURI__.core.invoke('save-json', bracketData, 'bracket');
+
+          if (saveRes.ok) {
+            if (window.mostrarNotificacion) {
+              window.mostrarNotificacion('✅ Bracket guardado correctamente siguiendo el esquema de Start.gg', 'success');
+            }
+          } else {
+            if (window.mostrarNotificacion) {
+              window.mostrarNotificacion('❌ Error al guardar bracket', 'error');
+            }
+          }
+
+        } catch (error) {
+          console.error('[ChallongeBracketWidget] Error:', error);
+          if (window.mostrarNotificacion) {
+            window.mostrarNotificacion(`❌ Error al generar bracket: ${error.message}`, 'error');
+          }
+        }
+      }
+
+      // Mostrar el widget y enfocar input al cargar
+      window.addEventListener('DOMContentLoaded', function () {
+        const widget = document.getElementById('tournamentFloatingWidget');
+        if (widget) widget.style.display = 'block';
+        const input = document.getElementById('startggTournamentInput');
+        if (input) input.focus();
+      });
+      // Buscar torneo desde el widget
+      function buscarStartggDesdeWidget() {
+        const input = document.getElementById('startggTournamentInput');
+        if (!input) return;
+        const query = input.value.trim();
+        if (query) buscarStartGG(query); // Pasa el texto de búsqueda como parámetro
+      }
+
+      // Funciones para el Top 8 del widget de Start.gg
+      async function mostrarTop8StartggDesdeWidget() {
+        const eventSelector = document.getElementById('startggEventSelector');
+        const panel = document.getElementById('startggTop8Panel');
+        const content = document.getElementById('startggTop8Content');
+        const eventNameSpan = document.getElementById('startggTop8EventName');
+
+        if (!eventSelector.value) {
+          mostrarNotificacion("❌ Selecciona un evento primero.", "error");
+          return;
+        }
+
+        // Mostrar el panel
+        panel.style.display = 'block';
+        content.innerHTML = '<div style="text-align:center; padding:20px;" class="text-muted"><i class="fa fa-spinner fa-spin"></i> Cargando Top 8...</div>';
+
+        // Obtener el nombre del evento seleccionado
+        const eventName = eventSelector.options[eventSelector.selectedIndex].text;
+        eventNameSpan.textContent = eventName;
+
+        try {
+          // Siempre recargar personajes con el juego actual del scoreboard
+          const currentGame = document.getElementById('gameSel')?.value || 'GGST';
+          console.log('[Top8Widget] Forzando recarga de personajes para juego:', currentGame);
+
+          try {
+            const personajesRes = await window.__TAURI__.core.invoke('get-personajes', currentGame);
+            if (personajesRes.personajes && personajesRes.personajes.length) {
+              window.listaPersonajes = personajesRes.personajes.map(p => p.nombre);
+              console.log('[Top8Widget] Personajes cargados:', window.listaPersonajes.length, 'para juego:', currentGame);
+            } else {
+              window.listaPersonajes = [];
+              console.warn('[Top8Widget] No se encontraron personajes para', currentGame);
+            }
+          } catch (e) {
+            console.warn('[Top8Widget] Error al cargar personajes:', e);
+            window.listaPersonajes = [];
+          }
+
+          // Llamar a la función de Start.gg para obtener el Top 8
+          // IMPORTANTE: eventSelector.value contiene el ID del evento, no el slug
+          const eventId = parseInt(eventSelector.value); // Asegurar que sea un número
+          console.log('[Top8Widget] Cargando Top 8 para evento ID:', eventId, 'tipo:', typeof eventId);
+
+          const response = await window.__TAURI__.core.invoke('startgg-get-standings', eventId);
+
+          console.log('[Top8Widget] Respuesta completa de Start.gg:', response);
+
+          if (!response.ok) {
+            console.error('[Top8Widget] Error en respuesta:', response.error);
+            content.innerHTML = `<div style="text-align:center; padding:20px;" class="text-error">❌ Error: ${response.error || 'No se pudo obtener datos del servidor'}</div>`;
+            return;
+          }
+
+          if (!response.top8 || response.top8.length === 0) {
+            console.warn('[Top8Widget] No se encontró Top 8 en la respuesta:', response);
+            content.innerHTML = '<div style="text-align:center; padding:20px;" class="text-error">❌ No se encontró Top 8 para este evento.</div>';
+            return;
+          }
+
+          console.log('[Top8Widget] Top 8 encontrado:', response.top8.length, 'jugadores');
+
+          // Generar el HTML para mostrar el Top 8 con selectores responsive
+          let html = '<div class="top8-widget-list" style="display:grid; gap:6px; max-height:280px; overflow-y:auto;">';
+
+          response.top8.forEach((player, index) => {
+            const position = index + 1;
+            const emoji = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣'][index] || `${position}º`;
+
+            // Debug: mostrar estructura del jugador
+            console.log(`[Top8Widget] Jugador ${index + 1}:`, player);
+
+            // Usar la misma lógica simple que la pestaña principal
+            const name = player.nombre || player.gamerTag || player.name || `Jugador ${position}`;
+            const character = player.character || '';
+
+            console.log(`[Top8Widget] Nombre extraído: ${name}, Personaje: ${character}`);
+
+            html += `
+  <div class="top8-widget-item" style="display:flex; align-items:center; padding:6px 8px; background:rgba(255,255,255,0.05); border-radius:4px; border-left:3px solid ${getPositionColor(position)}; flex-wrap:wrap; gap:8px;">
+          <div style="display:flex; align-items:center; flex:1; min-width:0;">
+            <span style="font-size:1em; margin-right:8px; min-width:25px; flex-shrink:0;">${emoji}</span>
+            <div style="flex:1; min-width:0;">
+              <div class="sgg-event-name" style="font-weight:bold; font-size:0.95em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${name}
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+            <select id="top8WidgetChar${index}" class="widget-select" style="padding:2px 4px; font-size:0.8em; min-width:80px; max-width:100px;" onchange="actualizarTop8WidgetData()">
+              <option value="">Personaje</option>
+              ${window.listaPersonajes ? window.listaPersonajes.map(char => `<option value="${char}" ${char === character ? 'selected' : ''}>${char}</option>`).join('') : ''}
+            </select>
+          </div>
+        </div>
+      `;
+          });
+
+          html += '</div>';
+          content.innerHTML = html;
+
+          // Guardar los datos para las funciones de copiar/guardar
+          window.currentTop8Data = {
+            eventName: eventName,
+            eventId: eventId, // Corregido: usar eventId en lugar de eventSlug
+            players: response.top8.map((player, index) => {
+              // Usar la misma lógica simple que arriba
+              const extractedName = player.nombre || player.gamerTag || player.name || `Jugador ${index + 1}`;
+              const extractedCharacter = player.character || '';
+
+              return {
+                ...player,
+                originalIndex: index,
+                extractedName: extractedName,
+                extractedCharacter: extractedCharacter
+              };
+            })
+          };
+
+        } catch (error) {
+          console.error('[Top8Widget] Error completo:', error);
+          console.error('[Top8Widget] Stack trace:', error.stack);
+          content.innerHTML = `<div style="text-align:center; padding:20px;" class="text-error">❌ Error al cargar el Top 8: ${error.message}</div>`;
+        }
+      }
+
+      function getPositionColor(position) {
+        const colors = {
+          1: '#ffd700', // Oro
+          2: '#c0c0c0', // Plata  
+          3: '#cd7f32', // Bronce
+          4: '#e67e22', // Naranja
+          5: '#9b59b6', // Púrpura
+          6: '#3498db', // Azul
+          7: '#2ecc71', // Verde
+          8: '#95a5a6'  // Gris
+        };
+        return colors[position] || '#666';
+      }
+
+      function cerrarTop8StartggWidget() {
+        const panel = document.getElementById('startggTop8Panel');
+        panel.style.display = 'none';
+      }
+
+      // Función para actualizar los datos del Top 8 cuando cambian los selectores
+      function actualizarTop8WidgetData() {
+        if (!window.currentTop8Data) return;
+
+        // Actualizar los personajes seleccionados en los datos
+        window.currentTop8Data.players.forEach((player, index) => {
+          const charSelect = document.getElementById(`top8WidgetChar${index}`);
+          if (charSelect) {
+            player.selectedCharacter = charSelect.value;
+          }
+        });
+      }
+
+      function copiarTop8StartggWidget() {
+        if (!window.currentTop8Data) {
+          mostrarNotificacion("❌ No hay datos de Top 8 para copiar.", "error");
+          return;
+        }
+
+        // Actualizar datos antes de copiar
+        actualizarTop8WidgetData();
+
+        const data = window.currentTop8Data;
+        let mensaje = `🏆 TOP 8 - ${data.eventName}\\n\\n`;
+
+        data.players.forEach((player, index) => {
+          const emoji = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣'][index] || `${index + 1}º`;
+          const name = player.extractedName || player.gamerTag || player.name || 'Jugador desconocido';
+          const character = player.selectedCharacter || player.extractedCharacter || '';
+
+          mensaje += `${emoji} ${name}`;
+          if (character) mensaje += ` (${character})`;
+          mensaje += `\\n`;
+        });
+
+        mensaje += '\\n#FGC #StartGG';
+
+        // Copiar al portapapeles
+        navigator.clipboard.writeText(mensaje).then(() => {
+          mostrarNotificacion("✅ Top 8 copiado al portapapeles.", "success");
+        }).catch(() => {
+          // Fallback para navegadores más antiguos
+          const textarea = document.createElement('textarea');
+          textarea.value = mensaje;
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textarea);
+          mostrarNotificacion("✅ Top 8 copiado al portapapeles.", "success");
+        });
+      }
+
+      async function guardarTop8StartggWidget() {
+        if (!window.currentTop8Data) {
+          mostrarNotificacion("❌ No hay datos de Top 8 para guardar.", "error");
+          return;
+        }
+
+        // Actualizar datos antes de guardar
+        actualizarTop8WidgetData();
+
+        const data = window.currentTop8Data;
+        const juego = document.getElementById('gameSel')?.value || '';
+        const fecha = new Date().toLocaleDateString('es-CL');
+
+        const top8Data = data.players.map((player, index) => {
+          const name = player.extractedName || player.gamerTag || player.name || 'Jugador desconocido';
+          const character = player.selectedCharacter || player.extractedCharacter || '';
+
+          return {
+            puesto: index + 1,
+            nombre: name,
+            personaje: character,
+            juego: juego
+          };
+        });
+
+        try {
+          const res = await window.__TAURI__.core.invoke('save-json', {
+            evento: data.eventName,
+            fecha: fecha,
+            top8: top8Data
+          }, 'top8');
+
+          if (res.ok) {
+            mostrarNotificacion("✅ Top 8 guardado correctamente.", "success");
+          } else {
+            mostrarNotificacion("❌ Error al guardar: " + (res.error || 'Error desconocido'), "error");
+          }
+        } catch (error) {
+          console.error('Error guardando Top 8:', error);
+          mostrarNotificacion("❌ Error al guardar el Top 8.", "error");
+        }
+      }
+    </script>
+
+    <!-- Cierre del contenedor principal flex -->
+  </div>
+
+  <script>
+    // Vincular botones del asistente OAuth2 de Nightbot
+    document.addEventListener('DOMContentLoaded', function () {
+      const btnAuthUrl = document.querySelector('button[onclick="generarNightbotAuthUrl()"]');
+      if (btnAuthUrl) btnAuthUrl.onclick = generarNightbotAuthUrl;
+      const btnCurl = document.querySelector('button[onclick="generarNightbotCurl()"]');
+      if (btnCurl) btnCurl.onclick = generarNightbotCurl;
+    });
+  </script>
+
+  <script>
+    // ── Twitch Stream Viewer ──────────────────────────────────────────────────
+    let twitchChatVisible = true;
+
+    function cargarStreamTwitch() {
+      const channel = document.getElementById('twitchStreamChannel').value.trim();
+      if (!channel) return;
+
+      const streamWv = document.getElementById('twitchStreamWebview');
+      const chatWv   = document.getElementById('twitchChatWebview');
+      const wrap     = document.getElementById('streamWebviewWrap');
+      const placeholder = document.getElementById('streamPlaceholder');
+
+      streamWv.src = `https://player.twitch.tv/?channel=${encodeURIComponent(channel)}&parent=localhost&muted=false`;
+      chatWv.src   = `https://www.twitch.tv/embed/${encodeURIComponent(channel)}/chat?parent=localhost&darkpopout`;
+
+      wrap.style.display = 'flex';
+      placeholder.style.display = 'none';
+
+      // Guardar canal en localStorage
+      try { localStorage.setItem('twitch-stream-channel', channel); } catch(_) {}
+    }
+
+    function toggleTwitchChat() {
+      twitchChatVisible = !twitchChatVisible;
+      const chatWv = document.getElementById('twitchChatWebview');
+      const btn    = document.getElementById('streamChatToggleBtn');
+      chatWv.style.display = twitchChatVisible ? '' : 'none';
+      btn.classList.toggle('active', twitchChatVisible);
+    }
+
+    // Restaurar canal guardado al abrir la tab
+    window.addEventListener('DOMContentLoaded', function() {
+      try {
+        const saved = localStorage.getItem('twitch-stream-channel');
+        if (saved) document.getElementById('twitchStreamChannel').value = saved;
+      } catch(_) {}
+
+      // Enter para cargar stream
+      document.getElementById('twitchStreamChannel').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') cargarStreamTwitch();
+      });
+    });
+  </script>
+
+  <script>
+    // Theme manager: default | neon | metro
+    (function initTheme() {
+      try {
+        // Migrate old neon flag
+        const neonOld = localStorage.getItem('theme-neon-enabled');
+        if (neonOld === '1') {
+          localStorage.setItem('app-theme', 'neon');
+          localStorage.removeItem('theme-neon-enabled');
+        } else if (neonOld === '0') {
+          localStorage.setItem('app-theme', 'default');
+          localStorage.removeItem('theme-neon-enabled');
+        }
+        const saved = localStorage.getItem('app-theme');
+        if (saved) {
+          setTheme(saved);
+        } else {
+          // Default to Metro per user preference
+          setTheme('metro');
+        }
+      } catch (_) {
+        setTheme('default');
+      }
+    })();
+
+    function setTheme(name) {
+      document.body.classList.remove('theme-neon', 'theme-metro');
+      if (name === 'neon') document.body.classList.add('theme-neon');
+      if (name === 'metro') document.body.classList.add('theme-metro');
+      try { localStorage.setItem('app-theme', name); } catch (_) { }
+      updateThemeButtonLabel(name);
+    }
+
+    function cycleTheme() {
+      const current = (localStorage.getItem('app-theme') || 'default');
+      const next = current === 'default' ? 'neon' : current === 'neon' ? 'metro' : 'default';
+      setTheme(next);
+    }
+
+    function updateThemeButtonLabel(name) {
+      const btn = document.getElementById('tabBtnTheme');
+      if (!btn) return;
+      const pretty = name === 'default' ? 'Default' : name === 'neon' ? 'Neon' : 'Metro';
+      btn.innerHTML = `<i class="fa fa-lightbulb"></i> Tema: ${pretty}`;
+    }
+  </script>
+
+</body>
+
+</html>
+
+<!--
+  Este es un archivo HTML para una aplicación de Scoreboard de torneos de juegos de lucha.
+  Incluye secciones para mostrar el marcador, bracket, top 8, comandos de Twitch y más.
+  Utiliza JavaScript para manejar la lógica y la interacción del usuario.
+-->

@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentación Técnica - Scoreboard</title>
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      /* Deep modern dark mode */
+      --bg-main: #0B1120;
+      /* Glassmorphism pane backgrounds */
+      --bg-panel: rgba(15, 23, 42, 0.4);
+      --bg-sidebar: rgba(15, 23, 42, 0.7);
+      --border: rgba(56, 189, 248, 0.15);
+      
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
+      
+      /* Accents */
+      --accent: #38BDF8;
+      --accent-hover: #0EA5E9;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --accent-gradient: linear-gradient(135deg, #38BDF8, #818CF8);
+      
+      /* Status Colors */
+      --ok: #34D399;
+      --warn: #FBBF24;
+      --danger: #F87171;
+      
+      /* Code context */
+      --code-bg: #0F172A;
+      
+      --font-sans: 'Inter', sans-serif;
+      --font-mono: 'Fira Code', monospace;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      color: var(--text-main);
+      background: var(--bg-main);
+      /* Subtle radiant gradients in background */
+      background-image: 
+        radial-gradient(ellipse at top right, var(--accent-glow), transparent 600px),
+        radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.1), transparent 500px);
+      background-attachment: fixed;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    /* Selection styling */
+    ::selection {
+      background: rgba(56, 189, 248, 0.3);
+      color: #fff;
+    }
+
+    /* Layout adjustments */
+    .container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Fixed Sidebar Navigation */
+    .sidebar {
+      width: 280px;
+      background: var(--bg-sidebar);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-right: 1px solid var(--border);
+      padding: 32px 24px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    /* Custom scrollbar for sidebar & body */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.1);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.2);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(56, 189, 248, 0.5);
+    }
+
+    .sidebar-brand {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 32px;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar nav {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .sidebar nav a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      padding: 8px 12px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+
+    .sidebar nav a::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 0;
+      background: var(--accent);
+      border-radius: 0 4px 4px 0;
+      transition: height 0.3s ease;
+    }
+
+    .sidebar nav a:hover {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-main);
+      transform: translateX(4px);
+    }
+
+    .sidebar nav a.active {
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .sidebar nav a.active::before {
+      height: 60%;
+    }
+
+    .sidebar nav .sublink {
+      padding-left: 28px;
+      font-size: 0.85rem;
+      opacity: 0.8;
+    }
+
+    /* Content Area */
+    .content {
+      flex: 1;
+      padding: 56px;
+      max-width: 1100px;
+      margin: 0 auto;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Header Elements */
+    .hero-header {
+      background: linear-gradient(145deg, rgba(30,41,59,0.5), rgba(15,23,42,0.8));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      margin-bottom: 48px;
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-header::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent-gradient);
+    }
+
+    .hero-header h1 {
+      margin-top: 0;
+      border: none;
+      padding: 0;
+    }
+
+    h1 {
+      font-size: 2.8rem;
+      font-weight: 700;
+      background: linear-gradient(to right, #FFFFFF, #94A3B8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-top: 0;
+      line-height: 1.2;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding-bottom: 12px;
+      margin-top: 64px;
+      color: #FFFFFF;
+      scroll-margin-top: 60px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 500;
+      margin-top: 32px;
+      color: #E2E8F0;
+      scroll-margin-top: 60px;
+    }
+
+    p, li { 
+      color: #CBD5E1; 
+      font-size: 1.05rem;
+    }
+
+    .muted { 
+      color: var(--text-muted); 
+      font-size: 0.95rem; 
+    }
+
+    /* Grid & Cards */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .card {
+      background: var(--bg-panel);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(to right, transparent, rgba(255,255,255,0.03), transparent);
+      transform: skewX(-20deg);
+      transition: all 0.6s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--accent-glow);
+    }
+    
+    .card:hover::after {
+      left: 150%;
+    }
+
+    .card h3 { 
+      margin-top: 0; 
+      color: var(--accent);
+    }
+
+    /* Interactive UI Elements */
+    .pills-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .pill {
+      background: rgba(56, 189, 248, 0.05);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s;
+      cursor: default;
+    }
+
+    .pill:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent);
+      transform: scale(1.05);
+    }
+
+    /* Code & Pre */
+    pre, code, .tree {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+    }
+
+    code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 3px 6px;
+      border-radius: 6px;
+      color: #38BDF8;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .code-block {
+      position: relative;
+      margin: 16px 0;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      overflow-x: auto;
+      color: #E2E8F0;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+      margin: 0;
+    }
+
+    pre code {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+      border: none;
+    }
+
+    .tree {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      overflow-x: auto;
+      color: #A5B4FC;
+      line-height: 1.5;
+    }
+
+    /* Tables */
+    .table-container {
+      overflow-x: auto;
+      margin-top: 24px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(8px);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      text-align: left;
+    }
+
+    th {
+      background: rgba(0, 0, 0, 0.2);
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(56, 189, 248, 0.03); }
+
+    /* Steps */
+    .step {
+      background: linear-gradient(90deg, rgba(30,41,59,0.6), rgba(15,23,42,0.4));
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 16px 0;
+      border-top: 1px solid rgba(255,255,255,0.03);
+      border-right: 1px solid rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      transition: transform 0.2s;
+    }
+    
+    .step:hover {
+      transform: translateX(4px);
+    }
+
+    .step strong { color: var(--accent); display: block; margin-bottom: 8px;}
+
+    /* Utility text colors */
+    .text-ok { color: var(--ok); }
+    .text-warn { color: var(--warn); }
+    .text-danger { color: var(--danger); font-weight: 600;}
+
+    /* Copy Button */
+    .copy-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: var(--font-sans);
+    }
+    .copy-btn:hover {
+      background: rgba(56, 189, 248, 0.3);
+      border-color: var(--accent);
+    }
+
+    footer {
+      margin-top: 80px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 900px) {
+      .container { flex-direction: column; }
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 20px;
+      }
+      .content { padding: 32px 20px; }
+      h1 { font-size: 2.2rem; }
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="container">
+    
+    <!-- Navigation Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        Scoreboard
+      </div>
+      <nav id="toc">
+        <a href="#intro">1. ¿Qué es este proyecto?</a>
+        <a href="#estructura">2. Estructura del proyecto</a>
+        <a href="#modulos">3. Módulos explicados</a>
+        <a href="#mod-main" class="sublink">3.1 main.js</a>
+        <a href="#mod-scoreboard" class="sublink">3.4 scoreboard.js</a>
+        <a href="#mod-overlays" class="sublink">3.9 example/ (overlays)</a>
+        <a href="#flujo">4. Flujo de datos general</a>
+        <a href="#integraciones">5. Integraciones externas</a>
+        <a href="#endpoints">6. Endpoints HTTP</a>
+        <a href="#archivos">7. Archivos y Config</a>
+        <a href="#state-json" class="sublink">7.1 Estado unificado (state.json)</a>
+        <a href="#tutorial">8. Tutorial completo</a>
+        <a href="#tut-instalacion" class="sublink">Instalación</a>
+        <a href="#tut-obs" class="sublink">Conectar OBS</a>
+        <a href="#overlays-lectura">8.1 Crear un Overlay HTML</a>
+        <a href="#overlay-individual" class="sublink">Opción A: archivo individual</a>
+        <a href="#overlay-state" class="sublink">Opción B: state.json directo</a>
+        <a href="#overlay-rutas" class="sublink">Rutas correctas</a>
+        <a href="#comandos">9. Comandos útiles</a>
+        <a href="#problemas">10. Problemas comunes</a>
+        <a href="#mejoras">11. Mejoras a futuro</a>
+      </nav>
+    </aside>
+
+    <!-- Main Documentation Content -->
+    <main class="content">
+      
+      <div class="hero-header">
+        <h1>Documentación Técnica</h1>
+        <p class="muted">Última actualización: 20-04-2026</p>
+        <p>
+          Este documento describe la arquitectura, archivos, flujo de datos, integraciones externas
+          y un tutorial completo para ejecutar y operar la aplicación Scoreboard.
+        </p>
+        <div class="pills-container">
+          <span class="pill">Electron</span>
+          <span class="pill">OBS WebSocket</span>
+          <span class="pill">Challonge</span>
+          <span class="pill">start.gg</span>
+          <span class="pill">Twitch / Nightbot</span>
+          <span class="pill">Stream Deck</span>
+        </div>
+      </div>
+
+      <section id="intro">
+        <h2>1. ¿Qué es este proyecto?</h2>
+        <p>
+          Es una app de escritorio centrada en la producción para torneos y streams de fighting games.
+          Permite editar un scoreboard en tiempo real, sincronizar datos desde brackets en vivo, controlar escenas de OBS,
+          publicar mensajes automatizados y exponer una API HTTP local para Stream Deck.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>🎯 Objetivo</h3>
+            <p>Centralizar en una sola interfaz dinámica todo el flujo de operación de un stream competitivo profesional.</p>
+          </div>
+          <div class="card">
+            <h3>📥 Entradas</h3>
+            <p>API keys, archivos locales JSON, datos consumidos de Challonge/start.gg, y comandos manuales/Stream Deck.</p>
+          </div>
+          <div class="card">
+            <h3>📤 Salidas</h3>
+            <p>Overlays web elegantes, automatización sobre OBS, notificaciones a Twitch/Nightbot.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="estructura">
+        <h2>2. Estructura del proyecto</h2>
+        <p>Mapa resumido de los principales directorios y su responsabilidad:</p>
+        <div class="tree">
+Scoreboard/
+├── main.js                       # Proceso principal Electron + API Local HTTP Component
+├── preload.js                    # Bridge de seguridad controlado (contextBridge)
+├── index.html                    # UI principal (Dashboard multi-tab)
+├── rutas.html                    # Ventana satélite para definir directorios de trabajo
+├── package.json                  # Definición del entorno y scripts
+├── start_app.bat / start_app.ps1 # Ejecutables rápidos de inicio
+├── close_app.bat                 # Script de limpieza y cierre forzado
+├── STREAM_DECK_INTEGRATION.md    # Documentación específica de comandos Stream Deck
+├── js/
+│   ├── scoreboard.js             # Core App UI Logic: Twitch, timers, IPC Listeners
+│   ├── startgg.js                # Parser e integrador de start.gg (GraphQL)
+│   ├── bracket-visual.js         # Renderizado en tiempo real de nodos de brackets
+│   └── utils.js                  # Set de utilerias transversales (formateo, fechas)
+├── css/
+│   └── ...                       # Colección CSS para tabs y componentes UI
+├── example/
+│   ├── scoreboard-overlay.html   # Source listo para OBS
+│   ├── bracket-top8.html         # Overlays complejos de torneo
+│   └── json/*.json               # JSON Seeds de configuración base
+└── personajes/                   # Media: Assets dinámicos segmentados por Fighting Game
+        </div>
+      </section>
+
+      <section id="modulos">
+        <h2>3. Módulos explicados uno por uno</h2>
+
+        <h3 id="mod-main">3.1 main.js (backend de escritorio)</h3>
+        <ul>
+          <li>Levanta Electron y desactiva el menú superior por defecto para mantener aspecto app.</li>
+          <li>Orquesta la persistencia local leyendo/escribiendo en <code>Documentos/js/scoreboard-config.json</code>.</li>
+          <li>Canal IPC usando <code>ipcMain.handle(...)</code> para abrir comunicación total entre NodeJS y la vista UI.</li>
+          <li>Contiene las capas de red externas: WebSockets con OBS, APIs a Challonge/start.gg, e instancias TMI de Twitch.</li>
+          <li>Inicializa el servidor HTTP local en <code>puerto 3001</code> diseñado para integrarse con Stream Deck o Touch Portal.</li>
+        </ul>
+
+        <h3 id="mod-scoreboard">3.4 js/scoreboard.js (frontend principal)</h3>
+        <ul>
+          <li>Motor de estados principal del Dashboard Front-End.</li>
+          <li>Navegación fluida de pestañas, persistiendo inputs a JSON.</li>
+          <li>Delegación de interacciones OAuth para Nightbot y generación de comandos vía interfaz gráfica de usuario.</li>
+        </ul>
+
+        <h3 id="mod-overlays">3.9 example/ (overlays)</h3>
+        <ul>
+          <li>El punto final del diseño visual para espectadores. HTML/JS/CSS listos para ser añadidos en fuentes "Browser Source" de OBS.</li>
+          <li>Estrategia <i>Polling/Watcher</i>: los overlays se hidratan periódicamente apuntando a archivos locales JSON modificados por la app principal.</li>
+        </ul>
+      </section>
+
+      <section id="flujo">
+        <h2>4. Flujo de datos general</h2>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyContext(this)">Copy</button>
+<pre><code>Usuario (UI en index.html) -> Dispara acción (js/scoreboard.js)
+ |
+ -> Invoca canal IPC (ipcRenderer invoke)
+   |
+   -> main.js procesa la lógica nativa (NodeJS)
+     |
+     +-> Escribe .json (estado persistido)  =======> OVERLAYS OBS (lectura pasiva)
+     +-> Realiza Peticiones REST / GraphQL externas
+     +-> Retorna Respuesta a UI (Feedback de éxito)</code></pre>
+        </div>
+      </section>
+
+      <section id="integraciones">
+        <h2>5. Integraciones externas</h2>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Servicio</th>
+                <th>Responsabilidad</th>
+                <th>Contexto</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>OBS WebSocket</td>
+                <td>Manipular escenas y capturar estados visuales</td>
+                <td><code>main.js</code></td>
+              </tr>
+              <tr>
+                <td>Challonge API</td>
+                <td>Consumir participantes, matches y status de torneo</td>
+                <td><code>main.js / UI Tab</code></td>
+              </tr>
+              <tr>
+                <td>start.gg GraphQL</td>
+                <td>Esquema completo de standing, sets, entes competidores</td>
+                <td><code>startgg.js / GraphQL Fetch</code></td>
+              </tr>
+              <tr>
+                <td>Twitch (tmi.js)</td>
+                <td>IRC Chat connection, emite alertas a fans</td>
+                <td>Pestaña Twitch UI</td>
+              </tr>
+              <tr>
+                <td>Nightbot API</td>
+                <td>Crear triggers !matches, !bracket on the fly</td>
+                <td>Pestaña Nightbot UI</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="endpoints">
+        <h2>6. Endpoints HTTP para Stream Deck</h2>
+        <p>Ruta principal configurada automáticamente de fondo: <code>http://localhost:3001</code></p>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Ruta GET</th>
+                <th>Acción interna que ejecuta</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>/score/player1/+1</code></td><td>Suma 1 punto al Jugador 1 visualmente y en el archivo local.</td></tr>
+              <tr><td><code>/reset-scores</code></td><td>Limpia puntos temporales a ambos a [ 0 ].</td></tr>
+              <tr><td><code>/swap-players</code></td><td>Intercambia scores, nombres y personajes.</td></tr>
+              <tr><td><code>/timer/reset</code></td><td>Reinicia el Countdown loop actual si existiera.</td></tr>
+              <tr><td><code>/game/GGST</code></td><td>Switch instantáneo de DB de personajes a código GGST.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="archivos">
+        <h2>7. Archivos de Configuración Relevantes</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Configuración Core</h3>
+            <p><code>Documentos/js/scoreboard-config.json</code><br><span class="muted">Ajustes directos del usuario general y overrides de rutas.</span></p>
+          </div>
+          <div class="card">
+            <h3>Keys Secretas</h3>
+            <p><code>apikey.json</code><br><span class="muted">Aisla tokens para evitar filtraciones visuales en live-streams.</span></p>
+          </div>
+          <div class="card">
+            <h3>Estado Unificado</h3>
+            <p><code>Documentos/js/state.json</code><br><span class="muted">Archivo central que agrupa todas las secciones de estado. Cada sección se actualiza de forma independiente.</span></p>
+          </div>
+          <div class="card">
+            <h3>Overlays (side-write)</h3>
+            <p><code>scoreboard.json, casters.json, top8.json...</code><br><span class="muted">Archivos individuales generados automáticamente como copia para los overlays de OBS.</span></p>
+          </div>
+        </div>
+      </section>
+
+      <section id="state-json">
+        <h2>7.1 Estado unificado: <code>state.json</code></h2>
+        <p>
+          Todos los datos de la aplicación se consolidan en un único archivo
+          <code>Documentos/js/state.json</code> organizado en secciones independientes.
+          Cuando se guarda una sección (por ejemplo, <code>scoreboard</code>), el sistema
+          lee el archivo completo, actualiza <strong>solo esa sección</strong> y lo escribe de vuelta.
+          El resto de secciones queda intacto — actualizar los marcadores nunca borra los comentaristas ni el timer.
+        </p>
+
+        <h3>Estructura del archivo</h3>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyContext(this)">Copy</button>
+<pre><code>{
+  "scoreboard": {
+    "player1": "...", "player2": "...",
+    "score1": 0,      "score2": 0,
+    "tag1": "...",    "tag2": "...",
+    "char1": "...",   "char2": "...",
+    "game": "...",    "round": "...",
+    "country1": "",   "country2": ""
+  },
+  "casters": {
+    "comentaristas": [
+      { "nombre": "...", "twitter": "..." },
+      { "nombre": "...", "twitter": "..." }
+    ]
+  },
+  "timer": {
+    "timerEndTimestamp": null
+  },
+  "top8": { ... },
+  "bracket": { ... }
+}</code></pre>
+        </div>
+
+        <h3>Patrón merge-on-write</h3>
+        <p>Cada llamada a <code>save-json</code> sigue este flujo:</p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyContext(this)">Copy</button>
+<pre><code>// Ejemplo: guardar scoreboard sin tocar casters ni timer
+saveJsonData(nuevoScoreboard, 'scoreboard')
+  1. Lee state.json  →  { scoreboard: {...}, casters: {...}, timer: {...}, ... }
+  2. Actualiza solo  →  state['scoreboard'] = nuevoScoreboard
+  3. Escribe back    →  state.json completo con casters y timer intactos
+  4. Side-write      →  scoreboard.json individual (compatibilidad overlays OBS)</code></pre>
+        </div>
+
+        <h3>Secciones disponibles</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr><th>Sección</th><th>Guarda / Carga con</th><th>Side-write a</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>scoreboard</code></td><td><code>save-json / load-json</code></td><td><code>Documentos/js/scoreboard.json</code></td></tr>
+              <tr><td><code>casters</code></td><td><code>save-json / load-json</code></td><td><code>Documentos/js/casters.json</code></td></tr>
+              <tr><td><code>timer</code></td><td><code>save-json / load-json</code></td><td><code>Documentos/js/timer.json</code></td></tr>
+              <tr><td><code>top8</code></td><td><code>save-json / load-json</code></td><td><code>Documentos/js/top8.json</code></td></tr>
+              <tr><td><code>bracket</code></td><td><code>save-bracket-json</code></td><td><code>example/json/bracket.json</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Migración automática</h3>
+        <p>
+          Si <code>state.json</code> no existe al arrancar la app, la función <code>migrateToState()</code>
+          en <code>main.js</code> lo crea automáticamente leyendo los archivos individuales existentes,
+          sin pérdida de datos.
+        </p>
+
+        <h3>Override de rutas</h3>
+        <p>
+          Es posible personalizar la ubicación de <code>state.json</code> añadiendo la clave
+          <code>state</code> en el objeto <code>rutas</code> de <code>scoreboard-config.json</code>:
+        </p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyContext(this)">Copy</button>
+<pre><code>// Documentos/js/scoreboard-config.json
+{
+  "rutas": {
+    "state": "C:/ruta/personalizada/state.json"
+  }
+}</code></pre>
+        </div>
+      </section>
+
+      <section id="tutorial">
+        <h2>8. Tutorial rápido general</h2>
+
+        <h3 id="tut-requisitos">Requisitos Previos Básicos</h3>
+        <ul>
+          <li>OS: Windows 10/11.</li>
+          <li>Paquetería: NodeJS (npm incluido).</li>
+          <li>Hardware: OBS Studio v28+ (WebSocket v5.x).</li>
+        </ul>
+
+        <h3 id="tut-instalacion">Instalación y Arranque</h3>
+        <div class="step">
+          <strong>Paso 1:</strong> Instalar librerías nativas requeridas
+          <div class="code-block"><pre><code>npm install</code></pre></div>
+        </div>
+        <div class="step">
+          <strong>Paso 2:</strong> Inicializar en entorno development (interactivo)
+          <div class="code-block"><pre><code>npm start</code></pre></div>
+        </div>
+        <p class="text-warn">Nota: Si usas .bat, corrobora la alineación de las rutas base del OS.</p>
+
+        <h3 id="tut-obs">Conectar con OBS</h3>
+        <ol>
+          <li>Abre OBS, despliega Herramientas > Configuración del servidor WebSocket. Asigna puerto y clave.</li>
+          <li>En la App -> pestaña "OBS", provee dichas credenciales para abrir la conexión constante segura.</li>
+          <li>En OBS, suma las fuentes de navegador <i>Browser Source</i> direccionando al filesystem.</li>
+        </ol>
+
+      </section>
+
+      <section id="comandos">
+        <h2>9. Comandos Útiles</h2>
+        <div class="code-block">
+<button class="copy-btn" onclick="copyContext(this)">Copy</button>
+<pre><code># Instala dependencias completas
+npm install
+
+# Corre el servidor y entorno electron dev
+npm start
+
+# Empaqueta y buildea todo el proyecto en modo release para portable (electron-builder)
+npm run dist</code></pre>
+        </div>
+      </section>
+
+      <section id="overlays-lectura">
+        <h2>8.1 Crear un Overlay HTML que lea datos de la app</h2>
+        <p>
+          Los overlays son archivos HTML que OBS carga como <strong>Browser Source</strong>.
+          Su única responsabilidad es leer un JSON local y renderizar los datos.
+          La app escribe ese JSON cada vez que el usuario guarda cambios.
+        </p>
+        <p class="text-warn">
+          <strong>Regla de oro:</strong> el overlay NUNCA escribe datos. Solo lee en polling (setInterval).
+        </p>
+
+        <h3 id="overlay-individual">Opción A — Leer el archivo individual (side-write)</h3>
+        <p>
+          Para cada sección existe un archivo JSON independiente en
+          <code>Documentos/js/&lt;sección&gt;.json</code>
+          que la app actualiza automáticamente al guardar.
+          Es la opción más sencilla: el overlay apunta a ese archivo y solo trabaja con los datos
+          de su propia sección.
+        </p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyContext(this)">Copy</button>
+<pre><code>// scoreboard-overlay.js — patrón base
+const JSON_PATH = 'C:/Users/TU_USUARIO/Documents/js/scoreboard.json';
+// Para casters: .../Documents/js/casters.json
+// Para top8:    .../Documents/js/top8.json
+// Para timer:   .../Documents/js/timer.json
+
+let lastHash = '';
+
+function updateOverlay() {
+  fetch(JSON_PATH + '?t=' + Date.now())   // ?t= evita caché del navegador
+    .then(r => r.json())
+    .then(data => {
+      const hash = JSON.stringify(data);
+      if (hash === lastHash) return;       // sin cambios, no re-renderiza
+      lastHash = hash;
+      renderScoreboard(data);             // tu función que escribe en el DOM
+    })
+    .catch(() => {});                     // silencia errores de red en OBS
+}
+
+updateOverlay();
+setInterval(updateOverlay, 2000);         // polling cada 2 segundos</code></pre>
+        </div>
+
+        <h3 id="overlay-state">Opción B — Leer state.json y extraer la sección</h3>
+        <p>
+          Si prefieres un solo punto de lectura para todos los overlays, apunta a
+          <code>state.json</code> y accede a <code>data.scoreboard</code>,
+          <code>data.casters</code>, etc.
+        </p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyContext(this)">Copy</button>
+<pre><code>// overlay-genérico.js — lee state.json completo
+const STATE_PATH = 'C:/Users/TU_USUARIO/Documents/js/state.json';
+const SECCION    = 'scoreboard';  // cambia a 'casters', 'top8', 'timer', 'bracket'
+
+let lastHash = '';
+
+function updateOverlay() {
+  fetch(STATE_PATH + '?t=' + Date.now())
+    .then(r => r.json())
+    .then(state => {
+      const data = state[SECCION] || {};
+      const hash = JSON.stringify(data);
+      if (hash === lastHash) return;
+      lastHash = hash;
+      render(data);
+    })
+    .catch(() => {});
+}
+
+updateOverlay();
+setInterval(updateOverlay, 2000);</code></pre>
+        </div>
+
+        <h3 id="overlay-rutas">Rutas correctas según el overlay</h3>
+        <p>
+          La ubicación física de los archivos depende del OS. La app siempre escribe en
+          <code>app.getPath('documents') + '/js/'</code> a menos que se haya sobreescrito
+          la ruta en <code>scoreboard-config.json</code>.
+        </p>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Sección</th>
+                <th>Ruta por defecto (Windows)</th>
+                <th>Variable en overlay</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>scoreboard</code></td>
+                <td><code>C:/Users/&lt;user&gt;/Documents/js/scoreboard.json</code></td>
+                <td><code>data.player1, data.score1 …</code></td>
+              </tr>
+              <tr>
+                <td><code>casters</code></td>
+                <td><code>C:/Users/&lt;user&gt;/Documents/js/casters.json</code></td>
+                <td><code>data.comentaristas[0].nombre …</code></td>
+              </tr>
+              <tr>
+                <td><code>top8</code></td>
+                <td><code>C:/Users/&lt;user&gt;/Documents/js/top8.json</code></td>
+                <td><code>data.players[n] …</code></td>
+              </tr>
+              <tr>
+                <td><code>timer</code></td>
+                <td><code>C:/Users/&lt;user&gt;/Documents/js/timer.json</code></td>
+                <td><code>data.timerEndTimestamp …</code></td>
+              </tr>
+              <tr>
+                <td><code>bracket</code></td>
+                <td><code>&lt;raíz app&gt;/example/json/bracket.json</code></td>
+                <td><code>data.players, data.matches …</code></td>
+              </tr>
+              <tr>
+                <td><em>todo</em></td>
+                <td><code>C:/Users/&lt;user&gt;/Documents/js/state.json</code></td>
+                <td><code>state.scoreboard, state.casters …</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card" style="border-left: 4px solid var(--warn); margin-top: 1.5rem;">
+          <h3 style="margin-top:0">⚠️ OBS y rutas locales</h3>
+          <p>
+            OBS bloquea <code>fetch()</code> a rutas <code>file:///</code> por seguridad.
+            Tienes dos alternativas para que el overlay lea los archivos correctamente:
+          </p>
+          <ol>
+            <li>
+              <strong>Activar "Acceso a archivos locales"</strong> en la configuración de la
+              Browser Source de OBS (casilla <em>"Allow access to local files"</em>).
+              Con esto <code>fetch('C:/...')</code> funciona sin cambios.
+            </li>
+            <li>
+              <strong>Servir los archivos con el servidor HTTP de la app.</strong>
+              La app expone <code>http://localhost:3001</code>; si se añade un endpoint
+              <code>GET /state</code> o <code>GET /state/:seccion</code>, el overlay puede
+              hacer <code>fetch('http://localhost:3001/state/scoreboard')</code> sin
+              necesitar permisos especiales en OBS.
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="problemas">
+        <h2>10. Troubleshooting / Típicos Problemas</h2>
+        <div class="card" style="border-left: 4px solid var(--danger);">
+          <h3 class="text-danger">App estática - NO actualizan Overlays</h3>
+          <ul>
+            <li>Posible colisión de permisos del SO. Revisar si la ruta de escritura configurada no tiene un candado o un Antivirus bloqueando <code>fs.writeFile</code>.</li>
+            <li>Error humano mapeo OBS: verificar la URL exacta del archivo html inyectado a la escena.</li>
+          </ul>
+
+          <h3 class="text-danger">Stream Deck ignora los comandos</h3>
+          <ul>
+            <li>No levantar el backend <code>npm start</code> causará que localhost:3001 no exista.</li>
+            <li>Colisión de puertos. Quizás hay otra app consumiendo el tcp/3001.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="mejoras">
+        <h2>11. Roadmap / Mejoras Recomendadas</h2>
+        <ul>
+          <li>Completar migración a <code>contextIsolation: true</code> blindando seguridad en IPC renderers.</li>
+          <li>Incorporar parsing validado por esquemas <i>(Zod o AJV)</i> al leer y escribir JSON locales para evitar corruptabilidad.</li>
+          <li>Generar test cases y Jest units para lógica <code>utils.js</code> en transformaciones de string.</li>
+          <li>Modificar el marcador desde la app (diseño visual del marcador en el HTML).</li>
+        </ul>
+      </section>
+
+      <footer>
+        Diseñado para operación profesional | App Scoreboard v2.0
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    // JS Logic for Sidebar Intersection Observer active state
+    document.addEventListener("DOMContentLoaded", () => {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            document.querySelectorAll('.sidebar nav a').forEach((link) => {
+              link.classList.remove('active');
+              if (link.getAttribute('href').substring(1) === entry.target.id) {
+                link.classList.add('active');
+              }
+            });
+          }
+        });
+      }, { rootMargin: "-30% 0px -70% 0px" });
+      
+      document.querySelectorAll('section[id]').forEach((section) => {
+        observer.observe(section);
+      });
+    });
+
+    // Copy to clipboard utility
+    function copyContext(btn) {
+      const pre = btn.parentElement.querySelector('pre');
+      navigator.clipboard.writeText(pre.innerText).then(() => {
+        btn.innerText = "Copied!";
+        setTimeout(() => btn.innerText = "Copy", 2000);
+      });
+    }
+  </script>
+</body>
+</html>
