@@ -423,34 +423,26 @@ async function guardarStartggToken() {
     msg.textContent = "❌ Ingresa un token válido.";
     return;
   }
-  // Pide la ruta del apikey.json desde el config
-  const res = await window.__TAURI__.core.invoke('cargar-rutas');
-  if (!res.ok || !res.rutas || !res.rutas.apikey) {
-    msg.textContent = "❌ No se ha configurado la ruta de API Key.";
-    return;
-  }
-  const apikeyPath = res.rutas.apikey;
-  // Si el archivo no existe, créalo vacío antes de guardar el token
-  const fsExists = await window.__TAURI__.core.invoke('leer-apikey-json', { pathStr: apikeyPath });
-  if (!fsExists || Object.keys(fsExists).length === 0) {
-    await window.__TAURI__.core.invoke('guardar-apikey-token', { pathStr: apikeyPath, token: '' });
-  }
-  const ok = await window.__TAURI__.core.invoke('guardar-apikey-token', { pathStr: apikeyPath, token });
-  if (ok) {
-    msg.textContent = `✅ Token guardado en: ${apikeyPath}`;
-  } else {
-    msg.textContent = `❌ Error al guardar el token en: ${apikeyPath}`;
+  try {
+    const res = await window.__TAURI__.core.invoke('save-api-key', { data: { startgg: token } });
+    if (res.ok) {
+      msg.textContent = `✅ Token guardado en apikey.json`;
+    } else {
+      msg.textContent = `❌ Error al guardar el token.`;
+    }
+  } catch (e) {
+    msg.textContent = `❌ Error: ${e.message || e}`;
   }
 }
 
 async function cargarStartggToken() {
-  const res = await window.__TAURI__.core.invoke('cargar-rutas');
-  if (res.ok && res.rutas && res.rutas.apikey) {
-    const apikeyPath = res.rutas.apikey;
-    const data = await window.__TAURI__.core.invoke('leer-apikey-json', { pathStr: apikeyPath });
-    if (data && data.startgg) {
-      document.getElementById('startggToken').value = data.startgg;
+  try {
+    const res = await window.__TAURI__.core.invoke('load-api-key');
+    if (res.ok && res.data && res.data.startgg) {
+      document.getElementById('startggToken').value = res.data.startgg;
     }
+  } catch (e) {
+    console.error("Error al cargar token de Start.gg:", e);
   }
 }
 // Cargar el token de Start.gg automáticamente al abrir la pestaña

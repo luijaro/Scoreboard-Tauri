@@ -383,8 +383,8 @@ Haz lo mismo para los otros métodos relacionados si no existen.
               <p>Ingresa un canal y presiona <strong>Ver Stream</strong></p>
             </div>
             <div class="stream-webview-wrap" id="streamWebviewWrap" style="display:none;">
-              <webview id="twitchStreamWebview" class="stream-webview" allowpopups></webview>
-              <webview id="twitchChatWebview" class="stream-chat-webview" allowpopups></webview>
+              <iframe id="twitchStreamWebview" class="stream-webview" allow="autoplay; encrypted-media; fullscreen" allowfullscreen frameborder="0"></iframe>
+              <iframe id="twitchChatWebview" class="stream-chat-webview" frameborder="0"></iframe>
             </div>
           </div>
         </div>
@@ -414,7 +414,7 @@ Haz lo mismo para los otros métodos relacionados si no existen.
               <div class="form-row"
                 style="flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:10px; margin-top:10px;">
                 <input id="nbClientId" placeholder="Client ID" class="sb-input">
-                <input id="nbRedirectUri" placeholder="Redirect URI" value="http://localhost" class="sb-input">
+                <input id="nbRedirectUri" placeholder="Redirect URI" value="http://localhost:3001/nightbot-callback" class="sb-input">
                 <button class="sb-btn" onclick="generarNightbotAuthUrl()">Generar URL de autorización</button>
               </div>
               <div id="nbAuthUrl" style="margin:8px 0 8px 0;word-break:break-all;"></div>
@@ -455,6 +455,18 @@ Haz lo mismo para los otros métodos relacionados si no existen.
           <div class="panel-section">
             <h2><img src="img/twitch.png" alt="Twitch"
                 style="height:1.3em;vertical-align:middle; margin-right:0.5em;" />Conectar bot a Twitch</h2>
+            <details style="margin-bottom:15px;">
+              <summary style="cursor:pointer;font-weight:500;">Generar Token OAuth de Twitch</summary>
+              <div class="form-row" style="flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:10px; margin-top:10px;">
+                <input id="twClientId" placeholder="Twitch Client ID (Opcional)" class="sb-input" style="flex:1; min-width:200px;">
+                <input id="twRedirectUri" placeholder="Redirect URI" value="http://localhost:3001/twitch-callback" class="sb-input" style="flex:1; min-width:200px;">
+                <button class="sb-btn btn-success" onclick="generarTwitchAuthUrl()">Obtener Token</button>
+              </div>
+              <div class="form-row text-muted" style="font-size:0.95em; margin:0;">
+                Requiere registrar una app en <a href="https://dev.twitch.tv/console" target="_blank">dev.twitch.tv</a> con esa URL de Redirección.<br>
+                Alternativamente, puedes usar el generador externo clásico si no deseas crear una app: <a href="https://twitchapps.com/tmi/" target="_blank">twitchapps.com/tmi/</a>
+              </div>
+            </details>
             <div class="form-row">
               <input id="twitchUser" placeholder="Usuario de Twitch" class="sb-input">
               <input id="twitchOAuth" type="password" placeholder="OAuth: oauth:xxxx..." class="sb-input">
@@ -1519,8 +1531,9 @@ Haz lo mismo para los otros métodos relacionados si no existen.
       const wrap     = document.getElementById('streamWebviewWrap');
       const placeholder = document.getElementById('streamPlaceholder');
 
-      streamWv.src = `https://player.twitch.tv/?channel=${encodeURIComponent(channel)}&parent=localhost&muted=false`;
-      chatWv.src   = `https://www.twitch.tv/embed/${encodeURIComponent(channel)}/chat?parent=localhost&darkpopout`;
+      const parentHost = window.location.hostname || "localhost";
+      streamWv.src = `https://player.twitch.tv/?channel=${encodeURIComponent(channel)}&parent=${parentHost}&muted=false`;
+      chatWv.src   = `https://www.twitch.tv/embed/${encodeURIComponent(channel)}/chat?parent=${parentHost}&darkpopout`;
 
       wrap.style.display = 'flex';
       placeholder.style.display = 'none';

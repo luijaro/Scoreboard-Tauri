@@ -40,8 +40,36 @@ function generarNightbotAuthUrl() {
     div.innerHTML = '<span class="text-error">Faltan datos</span>';
     return;
   }
+  
+  // Guardar configuración primero para persistirla
+  guardarApiKey();
+
   const url = `https://api.nightbot.tv/oauth2/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=commands`;
   div.innerHTML = `<b>URL de autorización:</b> <a href="${url}" target="_blank">${url}</a>`;
+  
+  // Abrir la URL automáticamente en el navegador por comodidad
+  if (window && window.__TAURI__) {
+    window.__TAURI__.opener.openUrl(url);
+  }
+}
+
+function generarTwitchAuthUrl() {
+  const clientId = document.getElementById('twClientId').value.trim();
+  const redirectUri = document.getElementById('twRedirectUri').value.trim();
+  if (!clientId || !redirectUri) {
+    mostrarNotificacion("❌ Ingresa el Twitch Client ID y Redirect URI", "error");
+    return;
+  }
+  
+  // Guardar configuración primero para persistirla
+  guardarApiKey();
+
+  const url = `https://id.twitch.tv/oauth2/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=chat:read+chat:edit`;
+  
+  // Abrir la URL automáticamente en el navegador
+  if (window && window.__TAURI__) {
+    window.__TAURI__.opener.openUrl(url);
+  }
 }
 
 function generarNightbotCurl() {
@@ -355,6 +383,13 @@ window.__TAURI__.event.listen('stream-deck-change-game', (event) => {
   // Guardar el cambio
   if (typeof guardarScoreboard === 'function') {
     guardarScoreboard();
+  }
+});
+
+window.__TAURI__.event.listen('api-key-updated', async () => {
+  console.log('[Tauri] api-key-updated event received, reloading credentials');
+  if (typeof cargarCredenciales === 'function') {
+    await cargarCredenciales();
   }
 });
 
@@ -1139,6 +1174,8 @@ async function guardarApiKey() {
   const twitchOAuth = document.getElementById('twitchOAuth') ? document.getElementById('twitchOAuth').value.trim() : "";
   const twitchUser = document.getElementById('twitchUser') ? document.getElementById('twitchUser').value.trim() : "";
   const twitchChannel = document.getElementById('twitchChannel') ? document.getElementById('twitchChannel').value.trim() : "";
+  const twitchClientId = document.getElementById('twClientId') ? document.getElementById('twClientId').value.trim() : "";
+  const twitchRedirectUri = document.getElementById('twRedirectUri') ? document.getElementById('twRedirectUri').value.trim() : "";
   if (!apiKey) {
     mostrarNotificacion("API Key vacía", "error");
     return;
@@ -1147,11 +1184,22 @@ async function guardarApiKey() {
   const nightbotClientId = document.getElementById('nbClientId') ? document.getElementById('nbClientId').value.trim() : '';
   const nightbotClientSecret = document.getElementById('nbClientSecret') ? document.getElementById('nbClientSecret').value.trim() : '';
   const nightbotRedirectUri = document.getElementById('nbRedirectUri') ? document.getElementById('nbRedirectUri').value.trim() : 'http://localhost';
-  await window.__TAURI__.core.invoke('save-api-key', { data: { apiKey, twitchOAuth, twitchUser, twitchChannel, nightbotToken, nightbotClientId, nightbotClientSecret, nightbotRedirectUri } });
+  await window.__TAURI__.core.invoke('save-api-key', { data: { 
+    apiKey, 
+    twitchOAuth, 
+    twitchUser, 
+    twitchChannel, 
+    twitchClientId,
+    twitchRedirectUri,
+    nightbotToken, 
+    nightbotClientId, 
+    nightbotClientSecret, 
+    nightbotRedirectUri 
+  } });
   mostrarNotificacion("Datos guardados.", "success");
 }
 
-(async function cargarCredencialesAlIniciar() {
+async function cargarCredenciales() {
   const res = await window.__TAURI__.core.invoke('load-api-key');
   if (res.ok && res.data) {
     const d = res.data;
@@ -1163,6 +1211,10 @@ async function guardarApiKey() {
       document.getElementById('twitchUser').value = d.twitchUser;
     if ('twitchChannel' in d && document.getElementById('twitchChannel'))
       document.getElementById('twitchChannel').value = d.twitchChannel;
+    if ('twitchClientId' in d && document.getElementById('twClientId'))
+      document.getElementById('twClientId').value = d.twitchClientId;
+    if ('twitchRedirectUri' in d && document.getElementById('twRedirectUri'))
+      document.getElementById('twRedirectUri').value = d.twitchRedirectUri;
     if ('nightbotToken' in d && document.getElementById('nightbotToken'))
       document.getElementById('nightbotToken').value = d.nightbotToken;
     if ('nightbotClientId' in d && document.getElementById('nbClientId'))
@@ -1172,6 +1224,10 @@ async function guardarApiKey() {
     if ('nightbotRedirectUri' in d && document.getElementById('nbRedirectUri'))
       document.getElementById('nbRedirectUri').value = d.nightbotRedirectUri;
   }
+}
+
+(async function cargarCredencialesAlIniciar() {
+  await cargarCredenciales();
 })();
 
 async function cargarJugadoresChallonge() {
@@ -1476,7 +1532,7 @@ async function reportarResultadoChallonge() {
   }
   const score1 = document.getElementById('p1Score').textContent.trim();
   const score2 = document.getElementById('p2Score').textContent.trim();
-  console.log('[REPORT] scores:', score1, '-', score2);
+  console.log('[REPORT] scores on scoreboard:', score1, '-', score2);
 
   const match = matchesCargados.find(m => String(m.id) === String(matchId));
   console.log('[REPORT] match found:', match);
@@ -1485,10 +1541,49 @@ async function reportarResultadoChallonge() {
     mostrarNotificacion("Match no encontrado.", "error");
     return;
   }
-  const scoreCsv = `${score1}-${score2}`;
+
+  // Robust Player Name Matching to align scores after swap
+  const sbP1Name = document.getElementById('p1NameInput').value.trim();
+  const sbP1Tag = document.getElementById('p1TagInput').value.trim();
+  const sbP1Full = sbP1Tag ? `${sbP1Tag} | ${sbP1Name}` : sbP1Name;
+
+  const sbP2Name = document.getElementById('p2NameInput').value.trim();
+  const sbP2Tag = document.getElementById('p2TagInput').value.trim();
+  const sbP2Full = sbP2Tag ? `${sbP2Tag} | ${sbP2Name}` : sbP2Name;
+
+  const challongeP1 = match.player1_name || "";
+  const challongeP2 = match.player2_name || "";
+
+  const norm = (s) => (s || "").toLowerCase().trim();
+
+  let finalChallongeScore1 = 0;
+  let finalChallongeScore2 = 0;
+
+  // Compare scoreboard Player 1 with Challonge Player 1 to see who is who
+  if (norm(sbP1Full) === norm(challongeP1) || norm(sbP1Name) === norm(challongeP1) || norm(sbP1Full).includes(norm(challongeP1)) || norm(challongeP1).includes(norm(sbP1Name))) {
+    // Scoreboard Player 1 is Challonge Player 1
+    finalChallongeScore1 = Number(score1);
+    finalChallongeScore2 = Number(score2);
+  } else if (norm(sbP1Full) === norm(challongeP2) || norm(sbP1Name) === norm(challongeP2) || norm(sbP1Full).includes(norm(challongeP2)) || norm(challongeP2).includes(norm(sbP1Name))) {
+    // Scoreboard Player 1 is Challonge Player 2
+    finalChallongeScore1 = Number(score2);
+    finalChallongeScore2 = Number(score1);
+  } else {
+    // Fallback: Check if scoreboard Player 2 is Challonge Player 1
+    if (norm(sbP2Full) === norm(challongeP1) || norm(sbP2Name) === norm(challongeP1)) {
+      finalChallongeScore1 = Number(score2);
+      finalChallongeScore2 = Number(score1);
+    } else {
+      // Default fallback (no match, maybe manual edit)
+      finalChallongeScore1 = Number(score1);
+      finalChallongeScore2 = Number(score2);
+    }
+  }
+
+  const scoreCsv = `${finalChallongeScore1}-${finalChallongeScore2}`;
   let winnerId = null;
-  if (Number(score1) > Number(score2)) winnerId = match.player1_id;
-  else if (Number(score2) > Number(score1)) winnerId = match.player2_id;
+  if (finalChallongeScore1 > finalChallongeScore2) winnerId = match.player1_id;
+  else if (finalChallongeScore2 > finalChallongeScore1) winnerId = match.player2_id;
   else {
     mostrarNotificacion("Empate no permitido.", "error");
     return;
@@ -1497,7 +1592,12 @@ async function reportarResultadoChallonge() {
   console.log('[REPORT] Sending to API:', { slug, matchId, scoreCsv, winnerId });
 
   document.getElementById('msgReportChallonge').textContent = "Enviando...";
-  const res = await window.__TAURI__.core.invoke('report-match-score', { slug, matchId, scoreCsv, winnerId });
+  const res = await window.__TAURI__.core.invoke('report-match-score', { 
+    slug, 
+    matchId: Number(matchId), 
+    scoreCsv, 
+    winnerId: Number(winnerId) 
+  });
   console.log('[REPORT] Response:', res);
 
   if (res.ok) {
