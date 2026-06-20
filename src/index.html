@@ -655,36 +655,6 @@ Haz lo mismo para los otros métodos relacionados si no existen.
               title="Guardar bracket completo">
               <i class="fa fa-sitemap"></i> Bracket
             </button>
-            <button class="widget-btn top8-btn" onclick="mostrarTop8StartggDesdeWidget()" title="Ver Top 8 del evento">
-              <i class="fa fa-list-ol"></i> Top 8
-            </button>
-          </div>
-          <!-- Panel de Top 8 (inicialmente oculto) -->
-          <div id="startggTop8Panel" class="widget-top8-panel"
-            style="display:none; margin-top:15px; border-radius:8px; padding:15px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h4 style="margin:0; font-size:1.1em;" class="text-warning">
-                <i class="fa fa-trophy"></i> Top 8 - <span id="startggTop8EventName">Evento</span>
-              </h4>
-              <button onclick="cerrarTop8StartggWidget()"
-                style="background:none; border:none; font-size:1.2em; cursor:pointer;" class="text-muted"
-                title="Cerrar Top 8">×</button>
-            </div>
-            <div id="startggTop8Content" style="max-height:300px; overflow-y:auto;">
-              <div style="text-align:center; padding:20px;" class="text-muted">
-                Selecciona un evento para ver el Top 8
-              </div>
-            </div>
-            <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-              <button class="sb-btn btn-secondary" onclick="copiarTop8StartggWidget()"
-                style="font-size:0.9em; padding:6px 12px;">
-                <i class="fa fa-copy"></i> Copiar
-              </button>
-              <button class="sb-btn btn-success" onclick="guardarTop8StartggWidget()"
-                style="font-size:0.9em; padding:6px 12px;">
-                <i class="fa fa-save"></i> Guardar
-              </button>
-            </div>
           </div>
         </div>
         <!-- Challonge tab content -->
@@ -732,35 +702,6 @@ Haz lo mismo para los otros métodos relacionados si no existen.
               title="Guardar bracket completo siguiendo esquema Start.gg">
               <i class="fa fa-sitemap"></i> Bracket
             </button>
-            <button class="widget-btn top8-btn btn-error" onclick="mostrarTop8ChallongeDesdeWidget()"
-              title="Ver Top 8 del torneo">
-              <i class="fa fa-trophy"></i> Top 8
-            </button>
-          </div>
-
-          <!-- Panel de Top 8 de Challonge (inicialmente oculto) -->
-          <div id="challongeTop8Panel" class="top8-ch-panel" style="display:none; margin-top:15px;">
-            <div class="top8-ch-header">
-              <h4 class="top8-ch-title">
-                <i class="fa fa-trophy"></i> Top 8 - <span id="challongeTop8TournamentName">Torneo</span>
-              </h4>
-              <button onclick="cerrarTop8ChallongeWidget()" class="top8-ch-close" title="Cerrar Top 8">
-                <i class="fa fa-times"></i>
-              </button>
-            </div>
-            <div id="challongeTop8Content">
-              <!-- El contenido del Top 8 se cargará aquí -->
-            </div>
-            <div style="display:flex; gap:8px; margin-top:10px; justify-content:center;">
-              <button class="sb-btn btn-secondary" onclick="copiarTop8ChallongeWidget()"
-                style="font-size:0.9em; padding:6px 12px;">
-                <i class="fa fa-copy"></i> Copiar
-              </button>
-              <button class="sb-btn btn-success" onclick="guardarTop8ChallongeWidget()"
-                style="font-size:0.9em; padding:6px 12px;">
-                <i class="fa fa-save"></i> Guardar
-              </button>
-            </div>
           </div>
         </div>
       </div>
