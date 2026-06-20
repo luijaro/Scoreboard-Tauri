@@ -434,7 +434,7 @@ async function guardarStartggToken() {
     await window.__TAURI__.core.invoke('guardar-apikey-token', { pathStr: apikeyPath, token: '' });
   }
   const ok = await window.__TAURI__.core.invoke('guardar-apikey-token', { pathStr: apikeyPath, token });
-  if (ok && ok.ok) {
+  if (ok) {
     msg.textContent = `✅ Token guardado en: ${apikeyPath}`;
   } else {
     msg.textContent = `❌ Error al guardar el token en: ${apikeyPath}`;
