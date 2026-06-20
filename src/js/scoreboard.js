@@ -1067,12 +1067,12 @@ async function cargarTop8() {
         <td style="padding:0.5em 1em;">${p.final_rank}</td>
         <td style="padding:0.5em 1em;">${p.name}</td>
         <td style="padding:0.5em 1em;">
-          <select class="sb-dropdown" id="top8char${idx}">
+          <select class="sb-dropdown" id="top8char${idx}" onchange="sincronizarCambioTop8('char', ${idx}, this.value)">
             ${listaPersonajes.map(char => `<option value="${char}">${char}</option>`).join("")}
           </select>
         </td>
         <td style="padding:0.5em 1em;">
-          <select class="sb-dropdown" id="top8twitter${idx}"></select>
+          <select class="sb-dropdown" id="top8twitter${idx}" onchange="sincronizarCambioTop8('twitter', ${idx}, this.value)"></select>
         </td>
       </tr>
     `;
@@ -1114,11 +1114,16 @@ async function guardarTop8() {
     top8Data.push({ nombre: jugador, personaje, juego, twitter });
   }
 
-  const res = await window.__TAURI__.core.invoke('save-json', {
+  const dataToSave = {
     evento: nombreTorneo,
     fecha: fecha,
     top8: top8Data
-  }, 'top8');
+  };
+
+  const res = await window.__TAURI__.core.invoke('save-json', {
+    data: dataToSave,
+    tipo: 'top8'
+  });
   if (res.ok) {
     mostrarNotificacion("✅ Top 8 guardado.", "success");
   } else {
@@ -1359,153 +1364,9 @@ function nombreDeRonda(round, roundsInfo) {
 
 
 async function cargarMatches() {
-  const apiKey = document.getElementById('apikey').value.trim();
-  const tournamentSlug = document.getElementById('tournamentList').value;
-  const msg = document.getElementById('msgMatches');
-  const selectMatch = document.getElementById('selectMatch');
-
-  if (!msg) {
-    console.error("❌ 'msgMatches' element not found!");
-    return;
-  }
-  if (!selectMatch) {
-    console.error("❌ 'selectMatch' element not found!");
-    msg.textContent = "Error interno: elemento selectMatch no encontrado.";
-    return;
-  }
-
-  if (!apiKey || !tournamentSlug) {
-    msg.textContent = "❌ Selecciona un torneo primero.";
-    return;
-  }
-
-  msg.textContent = "Cargando matches...";
-  try {
-    console.log("🔍 Iniciando carga de matches para torneo:", tournamentSlug);
-
-    // Primero obtener TODOS los matches (incluyendo TBD vs TBD)
-    const allMatchesRes = await window.__TAURI__.core.invoke('get-all-matches-and-participants', { slug: tournamentSlug });
-    console.log("📥 Respuesta de get-all-matches-and-participants:", allMatchesRes);
-
-    // Si esa función no existe, usar la función original como fallback
-    let res;
-    if (allMatchesRes && allMatchesRes.ok) {
-      res = allMatchesRes;
-      console.log("✅ Usando matches completos incluyendo pendientes");
-    } else {
-      console.log("⚠️ Función de matches completos no disponible, usando función original");
-      res = await window.__TAURI__.core.invoke('get-matches-and-participants', { slug: tournamentSlug });
-    }
-
-    if (!res.ok) {
-      console.error("❌ Error al obtener matches:", res.error);
-      throw new Error(res.error || "Error al obtener los matches.");
-    }
-
-    // Debug: mostrar información del torneo
-    console.log("🏆 Información del torneo:");
-    console.log("  - Número de matches de eliminatorias:", res.matches ? res.matches.length : 0);
-    console.log("  - Tipo de torneo:", res.tournament_type || "No especificado");
-    console.log("  - Estado del torneo:", res.tournament_state || "No especificado");
-    console.log("  - Matches completos:", res.matches);
-
-    let allMatches = res.matches || [];
-    let tipoMatches = "eliminatorias";
-
-    // Si no hay matches de eliminatorias y es un torneo de grupos, intentar obtener matches de grupos
-    if ((!res.matches || res.matches.length === 0) &&
-      ((res.tournament_type && (res.tournament_type.toLowerCase().includes("group") || res.tournament_type.toLowerCase().includes("round robin"))) ||
-        (res.tournament_state && res.tournament_state.toLowerCase().includes("group")))) {
-
-      console.log("🔄 Intentando obtener matches de grupos...");
-      msg.textContent = "Cargando matches de grupos...";
-
-      try {
-        const groupRes = await window.__TAURI__.core.invoke('get-group-matches', { slug: tournamentSlug });
-        console.log("📥 Respuesta de get-group-matches:", groupRes);
-
-        if (groupRes.ok && groupRes.matches && groupRes.matches.length > 0) {
-          allMatches = groupRes.matches;
-          tipoMatches = "grupos";
-          console.log("✅ Matches de grupos encontrados:", allMatches.length);
-          console.log("📋 Lista de matches de grupos:", allMatches);
-        } else {
-          console.log("⚠️ No se pudieron obtener matches de grupos:", groupRes.error || "Sin matches disponibles");
-        }
-      } catch (groupError) {
-        console.error("❌ Error al obtener matches de grupos:", groupError);
-      }
-    }
-
-    // Guardar número de participantes para cálculos de estructura
-    tournamentParticipantsCount = res.participantsCount || res.participantes?.length || 0;
-    window.tournamentParticipantsCount = tournamentParticipantsCount; // Sincronizar con global
-    console.log("👥 Número de participantes del torneo:", tournamentParticipantsCount);
-    console.log("📊 res.participantsCount:", res.participantsCount);
-    console.log("📊 res.participantes?.length:", res.participantes?.length);
-    console.log("📊 Estructura calculada:", calcularEstructuraTorneo(tournamentParticipantsCount));
-
-    // Limpia el select y agrega los matches
-    selectMatch.innerHTML = '';
-    matchesCargados = allMatches;
-
-    if (!allMatches || allMatches.length === 0) {
-      let mensaje = "⚠️ No se encontraron matches.";
-
-      if ((res.tournament_type && (res.tournament_type.toLowerCase().includes("group") || res.tournament_type.toLowerCase().includes("round robin"))) ||
-        (res.tournament_state && res.tournament_state.toLowerCase().includes("group"))) {
-        mensaje = "⚠️ No se encontraron matches de eliminatorias ni de grupos. El torneo puede no haber comenzado aún.";
-      } else {
-        mensaje += " Esto puede ocurrir si el torneo aún no ha comenzado o si hay un problema con la configuración.";
-      }
-
-      console.log("📝 Mensaje final:", mensaje);
-      msg.textContent = mensaje;
-      selectMatch.style.display = 'none';
-      return;
-    }
-
-    // Mostrar solo los matches que tienen jugadores asignados en el select
-    const matchesConJugadores = allMatches.filter(match =>
-      match.player1_name && match.player2_name &&
-      !match.player1_name.includes('TBD') && !match.player2_name.includes('TBD')
-    );
-
-    matchesConJugadores.forEach(match => {
-      const option = document.createElement('option');
-      option.value = match.id;
-
-      // Mostrar información adicional según el tipo de match
-      let matchInfo = "";
-      if (tipoMatches === "grupos" && match.group_name) {
-        matchInfo = ` (${match.group_name})`;
-      } else if (match.round && match.round !== 0) {
-        matchInfo = ` (R${match.round})`;
-      }
-
-      option.textContent = `Match #${match.id} - ${match.player1_name} vs ${match.player2_name}${matchInfo}`;
-      selectMatch.appendChild(option);
-    });
-
-    selectMatch.style.display = 'block';
-    msg.textContent = `✅ ${matchesConJugadores.length}/${allMatches.length} matches cargados (mostrando solo matches con jugadores asignados).`;
-    console.log(`🎉 Carga completada: ${allMatches.length} matches totales, ${matchesConJugadores.length} con jugadores`);
-
-    // Asigna el evento para mostrar los datos del match seleccionado
-    selectMatch.onchange = function () {
-      mostrarMatchEnScoreboard();
-      mostrarPreviewMatch();
-    };
-
-    // Si hay al menos un match, selecciona el primero y muestra sus datos automáticamente
-    if (matchesConJugadores.length > 0) {
-      selectMatch.selectedIndex = 0;
-      mostrarMatchEnScoreboard();
-      mostrarPreviewMatch();
-    }
-  } catch (error) {
-    console.error("💥 Error general en cargarMatches:", error);
-    if (msg) msg.textContent = `❌ ${error.message}`;
+  const tournamentList = document.getElementById('tournamentList');
+  if (tournamentList) {
+    await cargarMatchesChallonge(tournamentList.value);
   }
 }
 
@@ -1815,194 +1676,53 @@ function twittearMensaje() {
 // ================================
 
 async function cargarTorneos() {
-  const apiKey = document.getElementById('apikey').value.trim();
-  const msg = document.getElementById('msgMatches');
-  const tournamentList = document.getElementById('tournamentList');
-  if (!apiKey) {
-    mostrarNotificacion("❌ Ingresa tu API Key primero.", "error");
-    return;
-  }
-
-  msg.textContent = "Cargando torneos...";
-  try {
-    const res = await window.__TAURI__.core.invoke('get-tournaments');
-    if (!res.ok) throw new Error(res.error || "Error al obtener los torneos.");
-
-    // Muestra todos los torneos sin filtrar
-    const todosTorneos = res.tournaments;
-    console.log("Torneos recibidos:", todosTorneos);
-
-    tournamentList.innerHTML = '<option value="">Selecciona un torneo...</option>';
-    todosTorneos.forEach(tournament => {
-      const option = document.createElement('option');
-      option.value = tournament.url; // Se usa el slug del torneo
-      option.textContent = tournament.name; // Nombre del torneo
-      tournamentList.appendChild(option);
-    });
-
-    msg.textContent = todosTorneos.length > 0
-      ? "✅ Torneos cargados."
-      : "⚠️ No se encontraron torneos.";
-  } catch (error) {
-    msg.textContent = `❌ ${error.message}`;
-  }
+  await cargarTodosLosTorneosChallonge();
 }
 
 async function cargarTorneosTop8() {
-  const apiKey = document.getElementById('apikey').value.trim();
+  await cargarTodosLosTorneosChallonge();
   const select = document.getElementById('tournamentTop8');
-  if (!apiKey) {
-    select.innerHTML = '<option value="">Ingresa tu API Key primero</option>';
-    return;
-  }
-  select.innerHTML = '<option value="">Cargando torneos...</option>';
-  try {
-    const res = await window.__TAURI__.core.invoke('get-tournaments');
-    if (!res.ok) throw new Error(res.error || "Error al obtener torneos.");
-    // Ordena los torneos de más nuevo a más antiguo
-    const sortedTournaments = res.tournaments
-      .filter(t => t.created_at)
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    if (sortedTournaments.length === 0) {
-      select.innerHTML = '<option value="">No se encontraron torneos</option>';
-      return;
-    }
-    let options = '<option value="">Selecciona un torneo...</option>';
-    sortedTournaments.forEach(tournament => {
-      options += `<option value="${tournament.url}">${tournament.name}</option>`;
-    });
-    select.innerHTML = options;
-
-    // Si ya existe un torneo seleccionado para Top 8, restáuralo
+  if (select) {
+    // Restaurar si existe
     if (window.ultimoTorneoTop8) {
       select.value = window.ultimoTorneoTop8;
     }
-
-    // Actualiza la variable global cada vez que se cambia la selección
     select.onchange = () => {
       window.ultimoTorneoTop8 = select.value;
       cargarTop8(); // Se carga el Top 8 automáticamente al seleccionar
       syncChallongeTournament('tournamentTop8');
     };
-  } catch (error) {
-    select.innerHTML = `<option value="">❌ ${error.message}</option>`;
   }
 }
 
 async function cargarTorneosBracket() {
-  const apiKey = document.getElementById('apikey').value.trim();
+  await cargarTodosLosTorneosChallonge();
   const select = document.getElementById('tournamentBracket');
-  if (!apiKey) {
-    select.innerHTML = '<option value="">Ingresa tu API Key primero</option>';
-    return;
-  }
-  select.innerHTML = '<option value="">Cargando torneos...</option>';
-  try {
-    const res = await window.__TAURI__.core.invoke('get-tournaments');
-    if (!res.ok) throw new Error(res.error || "Error al obtener torneos.");
-    // Ordenar por fecha de creación (más nuevo a más antiguo)
-    const sorted = res.tournaments
-      .filter(t => t.created_at)
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    if (!sorted.length) {
-      select.innerHTML = '<option value="">No se encontraron torneos</option>';
-      return;
-    }
-    let options = '<option value="">Selecciona un torneo...</option>';
-    sorted.forEach(tournament => {
-      options += `<option value="${tournament.url}">${tournament.name}</option>`;
-    });
-    select.innerHTML = options;
-
-    // Si ya existe un torneo seleccionado en la sesión, restáuralo
+  if (select) {
+    // Restaurar si existe
     if (window.ultimoTorneoBracket) {
       select.value = window.ultimoTorneoBracket;
     }
-
-    // Actualiza la variable global cada vez que se cambia la selección
     select.onchange = async () => {
       window.ultimoTorneoBracket = select.value;
       mostrarBracket();
       syncChallongeTournament('tournamentBracket');
-
-      // Nuevo: obtener y guardar los matches y el top 8 del torneo seleccionado
-      if (select.value) {
-        // 1. Obtener matches y participantes
-        const resMatches = await window.__TAURI__.core.invoke('get-matches-and-participants', { slug: select.value });
-        // 2. Obtener Top 8
-        const resTop8 = await window.__TAURI__.core.invoke('get-top8', { slug: select.value });
-
-        if (resMatches.ok && resMatches.matches && resTop8.top8) {
-          const matchesFormateados = resMatches.matches.map((m, idx) => ({
-            id: m.identifier || m.id || `m${idx + 1}`,
-            p1: m.player1_name,
-            p2: m.player2_name,
-            p1s: Number((m.scores_csv || '').split('-')[0]) || 0,
-            p2s: Number((m.scores_csv || '').split('-')[1]) || 0
-          }));
-
-          // Guardar matches cargados globalmente
-        } else {
-          mostrarNotificacion('❌ No se pudieron obtener los matches o el Top 8.', 'error');
-        }
-      }
     };
-  } catch (error) {
-    select.innerHTML = `<option value="">❌ ${error.message}</option>`;
   }
 }
 
-
 async function buscarTorneosMatches() {
-  const apiKey = document.getElementById('apikey').value.trim();
-  const msg = document.getElementById('msgMatches');
-  const tournamentList = document.getElementById('tournamentList');
-  if (!apiKey) {
-    msg.textContent = "❌ Ingresa tu API Key primero.";
-    return;
-  }
-
-  msg.textContent = "Cargando torneos...";
-  try {
-    const res = await window.__TAURI__.core.invoke('get-tournaments');
-    if (!res.ok) throw new Error(res.error || "Error al obtener los torneos.");
-
-    const todosTorneos = res.tournaments;
-    console.log("Torneos recibidos:", todosTorneos);
-
-    // Cargar todos los torneos ordenados de más nuevo a más antiguo
-    const torneosOrdenados = todosTorneos
-      .filter(t => t.created_at)
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-    tournamentList.innerHTML = '<option value="">Selecciona un torneo...</option>';
-    torneosOrdenados.forEach(t => {
-      const option = document.createElement('option');
-      option.value = t.url;
-      // Mostrar estado del torneo junto al nombre
-      const estado = t.state ? ` (${t.state})` : '';
-      option.textContent = t.name + estado;
-      tournamentList.appendChild(option);
-    });
-
-    // Restaurar el último torneo seleccionado si existe
-    if (ultimoTorneoMatches && torneosOrdenados.some(t => t.url === ultimoTorneoMatches)) {
-      tournamentList.value = ultimoTorneoMatches;
-      // Quitar la llamada automática a cargarMatches()
-      // cargarMatches(); // <-- ELIMINA o comenta esta línea
+  await cargarTodosLosTorneosChallonge();
+  const select = document.getElementById('tournamentList');
+  if (select) {
+    // Restaurar si existe
+    if (window.ultimoTorneoMatches) {
+      select.value = window.ultimoTorneoMatches;
     }
-
-    // Guardar el último torneo seleccionado cada vez que cambie
-    tournamentList.onchange = () => {
-      ultimoTorneoMatches = tournamentList.value;
+    select.onchange = () => {
+      window.ultimoTorneoMatches = select.value;
       syncChallongeTournament('tournamentList');
     };
-
-    msg.textContent = torneosOrdenados.length > 0
-      ? "✅ Torneos cargados."
-      : "⚠️ No se encontraron torneos.";
-  } catch (error) {
-    msg.textContent = `❌ ${error.message}`;
   }
 }
 
@@ -2437,13 +2157,260 @@ function syncChallongeTournament(changedId) {
     }
   });
 
-  // Si se actualizó el selector del widget, cargar los matches automáticamente
-  if (updatedAny && changedId !== 'challongeTournamentSelector') {
-    if (typeof cargarMatchesChallongeDesdeWidget === 'function') {
-      cargarMatchesChallongeDesdeWidget();
-    }
+  // Si se seleccionó un torneo, cargar matches de manera unificada
+  if (val) {
+    cargarMatchesChallonge(val);
   }
 }
+
+// Cargar todos los torneos desde la API y pueblar los dropdowns
+async function cargarTodosLosTorneosChallonge() {
+  const apiKeyInput = document.getElementById('apikey');
+  if (!apiKeyInput) return;
+  const apiKey = apiKeyInput.value.trim();
+  if (!apiKey) {
+    console.warn("API Key no ingresada aún.");
+    return;
+  }
+
+  try {
+    const res = await window.__TAURI__.core.invoke('get-tournaments');
+    if (!res.ok) throw new Error(res.error || "Error al obtener los torneos.");
+
+    const torneos = res.tournaments || [];
+    console.log("[Challonge] Torneos cargados para unificación:", torneos);
+
+    // Ordenar de más nuevo a más antiguo
+    const torneosOrdenados = torneos
+      .filter(t => t.created_at)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    // Actualizar todas las listas de torneos
+    actualizarListasDeTorneosChallonge(torneosOrdenados);
+
+    return torneosOrdenados;
+  } catch (error) {
+    console.error("[Challonge] Error al cargar todos los torneos:", error);
+    const ids = ['challongeTournamentSelector', 'tournamentList', 'tournamentBracket', 'tournamentTop8'];
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `<option value="">❌ ${error.message}</option>`;
+    });
+  }
+}
+
+// Poblar los 4 selectores de torneos con la misma lista de torneos
+function actualizarListasDeTorneosChallonge(torneos) {
+  const ids = ['challongeTournamentSelector', 'tournamentList', 'tournamentBracket', 'tournamentTop8'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    
+    const valPrevio = el.value;
+    
+    el.innerHTML = '<option value="">Selecciona un torneo...</option>';
+    torneos.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.url;
+      const estado = t.state ? ` (${t.state})` : '';
+      opt.textContent = t.name + estado;
+      el.appendChild(opt);
+    });
+    
+    // Restaurar selección previa si aún existe
+    if (valPrevio && torneos.some(t => t.url === valPrevio)) {
+      el.value = valPrevio;
+    }
+  });
+}
+
+// Carga matches de manera unificada para el slug seleccionado
+async function cargarMatchesChallonge(slug = null) {
+  if (!slug) {
+    const selector = document.getElementById('challongeTournamentSelector') || document.getElementById('tournamentList');
+    slug = selector ? selector.value : '';
+  }
+  
+  if (!slug) {
+    console.log("No hay slug seleccionado para cargar matches.");
+    return;
+  }
+
+  const msgMatches = document.getElementById('msgMatches');
+  const loadingBar = document.getElementById('challongeMatchLoadingBar');
+  const selectMatch = document.getElementById('selectMatch');
+  const challongeMatchSelector = document.getElementById('challongeMatchSelector');
+
+  if (msgMatches) msgMatches.textContent = "Cargando matches...";
+  if (loadingBar) loadingBar.style.display = 'block';
+  if (selectMatch) selectMatch.style.display = 'none';
+  if (challongeMatchSelector) challongeMatchSelector.style.display = 'none';
+
+  try {
+    console.log("🔍 [Unificado] Cargando matches para slug:", slug);
+    const res = await window.__TAURI__.core.invoke('get-all-matches-and-participants', { slug });
+    
+    let allMatches = [];
+    let tipoMatches = "eliminatorias";
+    let participantsCount = 0;
+
+    if (res && res.ok) {
+      allMatches = res.matches || [];
+      participantsCount = res.participantsCount || res.participantes?.length || 0;
+    } else {
+      const fallbackRes = await window.__TAURI__.core.invoke('get-matches-and-participants', { slug });
+      if (fallbackRes.ok) {
+        allMatches = fallbackRes.matches || [];
+        participantsCount = fallbackRes.participantsCount || fallbackRes.participantes?.length || 0;
+      } else {
+        throw new Error(res?.error || fallbackRes?.error || "Error al obtener matches.");
+      }
+    }
+
+    if ((!allMatches || allMatches.length === 0) && res.tournament_type && res.tournament_type.toLowerCase().includes("group")) {
+      try {
+        const groupRes = await window.__TAURI__.core.invoke('get-group-matches', { slug });
+        if (groupRes.ok && groupRes.matches && groupRes.matches.length > 0) {
+          allMatches = groupRes.matches;
+          tipoMatches = "grupos";
+        }
+      } catch (groupErr) {
+        console.error("Error al obtener matches de grupos:", groupErr);
+      }
+    }
+
+    window.tournamentParticipantsCount = participantsCount;
+    tournamentParticipantsCount = participantsCount;
+    matchesCargados = allMatches;
+
+    actualizarSelectoresMatchesChallonge(allMatches, tipoMatches);
+
+    if (msgMatches) msgMatches.textContent = "✅ Matches cargados.";
+  } catch (error) {
+    console.error("Error en cargarMatchesChallonge unificado:", error);
+    if (msgMatches) msgMatches.textContent = `❌ ${error.message}`;
+  } finally {
+    if (loadingBar) loadingBar.style.display = 'none';
+  }
+}
+
+// Poblar los dropdowns de matches de la pestaña y del widget
+function actualizarSelectoresMatchesChallonge(matches, tipoMatches) {
+  const selectMatch = document.getElementById('selectMatch');
+  const challongeMatchSelector = document.getElementById('challongeMatchSelector');
+  
+  if (selectMatch) selectMatch.innerHTML = '';
+  if (challongeMatchSelector) challongeMatchSelector.innerHTML = '<option value="">Selecciona un match...</option>';
+
+  const matchesFiltrados = matches.filter(match =>
+    match.player1_name && match.player2_name &&
+    !match.player1_name.includes('TBD') && !match.player2_name.includes('TBD') &&
+    !match.winner_id
+  );
+
+  if (matchesFiltrados.length === 0) {
+    if (selectMatch) {
+      selectMatch.innerHTML = '<option value="">No hay matches abiertos</option>';
+      selectMatch.style.display = 'block';
+    }
+    if (challongeMatchSelector) {
+      challongeMatchSelector.innerHTML = '<option value="">No hay matches abiertos</option>';
+      challongeMatchSelector.style.display = 'block';
+    }
+    return;
+  }
+
+  matchesFiltrados.forEach(match => {
+    let matchInfo = "";
+    if (tipoMatches === "grupos" && match.group_name) {
+      matchInfo = ` (${match.group_name})`;
+    } else if (match.round && match.round !== 0) {
+      matchInfo = ` (R${match.round})`;
+    }
+    const text = `Match #${match.id} - ${match.player1_name} vs ${match.player2_name}${matchInfo}`;
+    
+    if (selectMatch) {
+      const opt = document.createElement('option');
+      opt.value = match.id;
+      opt.textContent = text;
+      opt.dataset.match = JSON.stringify(match);
+      selectMatch.appendChild(opt);
+    }
+    
+    if (challongeMatchSelector) {
+      const opt = document.createElement('option');
+      opt.value = match.id;
+      opt.textContent = text;
+      opt.dataset.match = JSON.stringify(match);
+      challongeMatchSelector.appendChild(opt);
+    }
+  });
+
+  if (selectMatch) selectMatch.style.display = 'block';
+  if (challongeMatchSelector) challongeMatchSelector.style.display = 'block';
+
+  if (selectMatch) {
+    selectMatch.selectedIndex = 0;
+  }
+  if (challongeMatchSelector) {
+    challongeMatchSelector.value = selectMatch ? selectMatch.value : '';
+  }
+
+  mostrarMatchEnScoreboard();
+  mostrarPreviewMatch();
+}
+
+// Sincronizar selección de match entre pestaña y widget
+function syncChallongeMatch(changedId) {
+  const changedEl = document.getElementById(changedId);
+  if (!changedEl) return;
+  const val = changedEl.value;
+
+  const otherId = changedId === 'selectMatch' ? 'challongeMatchSelector' : 'selectMatch';
+  const otherEl = document.getElementById(otherId);
+
+  if (otherEl && otherEl.value !== val) {
+    otherEl.value = val;
+  }
+
+  if (val) {
+    mostrarMatchEnScoreboard();
+    mostrarPreviewMatch();
+  }
+}
+
+// Sincronizar personajes y Twitter en las tablas del Top 8 en tiempo real
+function sincronizarCambioTop8(tipo, idx, valor) {
+  if (tipo === 'char') {
+    const tabEl = document.getElementById(`top8char${idx}`);
+    const widgetEl = document.getElementById(`challongeTop8Char${idx}`);
+    if (tabEl && tabEl.value !== valor) tabEl.value = valor;
+    if (widgetEl && widgetEl.value !== valor) widgetEl.value = valor;
+  } else if (tipo === 'twitter') {
+    const tabEl = document.getElementById(`top8twitter${idx}`);
+    const widgetEl = document.getElementById(`challongeTop8Twitter${idx}`);
+    if (tabEl && tabEl.value !== valor) tabEl.value = valor;
+    if (widgetEl && widgetEl.value !== valor) widgetEl.value = valor;
+  }
+}
+
+// Registrar sincronización de selección al cargar
+document.addEventListener('DOMContentLoaded', () => {
+  const selectMatch = document.getElementById('selectMatch');
+  const challongeMatchSelector = document.getElementById('challongeMatchSelector');
+
+  if (selectMatch) {
+    selectMatch.addEventListener('change', () => {
+      syncChallongeMatch('selectMatch');
+    });
+  }
+
+  if (challongeMatchSelector) {
+    challongeMatchSelector.addEventListener('change', () => {
+      syncChallongeMatch('challongeMatchSelector');
+    });
+  }
+});
 
 
 

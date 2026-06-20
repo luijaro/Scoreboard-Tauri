@@ -706,7 +706,7 @@ Haz lo mismo para los otros métodos relacionados si no existen.
             <button class="sb-btn" style="width:90%; margin-bottom:10px;" onclick="buscarChallongeDesdeWidget()"><i
                 class="fa fa-search"></i> Buscar</button>
             <select id="challongeTournamentSelector" class="widget-select"
-              onchange="cargarMatchesChallongeDesdeWidget()">
+              onchange="syncChallongeTournament('challongeTournamentSelector')">
               <option value="">Selecciona un torneo...</option>
             </select>
           </div>
@@ -868,12 +868,14 @@ Haz lo mismo para los otros métodos relacionados si no existen.
               const slugRes = await window.__TAURI__.core.invoke('get-matches-and-participants', { slug: query });
               if (slugRes.ok && slugRes.tournament_name) {
                 // Si encontramos el torneo por slug, agregarlo directamente
-                selector.innerHTML = '<option value="">Selecciona un torneo...</option>';
-                const opt = document.createElement('option');
-                opt.value = query;
-                opt.textContent = `🎯 ${slugRes.tournament_name} (encontrado por slug)`;
-                opt.selected = true; // Seleccionar automáticamente
-                selector.appendChild(opt);
+                const nuevoTorneo = { url: query, name: slugRes.tournament_name, state: 'encontrado por slug' };
+                actualizarListasDeTorneosChallonge([nuevoTorneo]);
+                
+                const ids = ['challongeTournamentSelector', 'tournamentList', 'tournamentBracket', 'tournamentTop8'];
+                ids.forEach(id => {
+                  const el = document.getElementById(id);
+                  if (el) el.value = query;
+                });
 
                 // Mostrar notificación de éxito
                 if (window.mostrarNotificacion) {
@@ -885,7 +887,6 @@ Haz lo mismo para los otros métodos relacionados si no existen.
                 return;
               }
             } catch (slugError) {
-              // Si falla la búsqueda por slug, continuar con búsqueda normal
               console.log('Slug no encontrado, buscando en lista general...');
             }
           }
@@ -912,13 +913,12 @@ Haz lo mismo para los otros métodos relacionados si no existen.
             return;
           }
 
-          selector.innerHTML = '<option value="">Selecciona un torneo...</option>';
-          torneos.forEach(t => {
-            const opt = document.createElement('option');
-            opt.value = t.url;
-            opt.textContent = t.name + (t.state ? ` (${t.state})` : '');
-            selector.appendChild(opt);
-          });
+          const torneosOrdenados = torneos
+            .filter(t => t.created_at)
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+          // Actualizar todas las listas
+          actualizarListasDeTorneosChallonge(torneosOrdenados);
 
           if (window.mostrarNotificacion) {
             window.mostrarNotificacion(`✅ Encontrados ${torneos.length} torneo(s)`, 'success');
@@ -933,93 +933,12 @@ Haz lo mismo para los otros métodos relacionados si no existen.
       }
 
       async function cargarMatchesChallongeDesdeWidget() {
-        const selector = document.getElementById('challongeTournamentSelector');
-        const matchSelector = document.getElementById('challongeMatchSelector');
-        const loadingBar = document.getElementById('challongeMatchLoadingBar');
-        if (!selector || !matchSelector || !loadingBar) return;
-        const slug = selector.value;
-        if (!slug) {
-          matchSelector.style.display = 'none';
-          loadingBar.style.display = 'none';
-          matchSelector.innerHTML = '<option value="">Selecciona un match...</option>';
-          return;
-        }
-        matchSelector.style.display = 'none';
-        loadingBar.style.display = 'block';
-        try {
-          const res = await window.__TAURI__.core.invoke('get-matches-and-participants', { slug });
-          if (!res.ok || !res.matches) throw new Error(res.error || 'No se pudieron obtener matches');
-
-          // Guardar número de participantes para cálculos de estructura en el widget
-          if (typeof window.tournamentParticipantsCount !== 'undefined') {
-            window.tournamentParticipantsCount = res.participantsCount || res.participantes?.length || 0;
-            console.log('🎮 [WIDGET] Participantes guardados:', window.tournamentParticipantsCount);
-          }
-
-          // Solo matches abiertos y con jugadores asignados
-          const matches = res.matches.filter(m => m.player1_name && m.player2_name && m.player1_name !== 'TBD' && m.player2_name !== 'TBD' && !m.winner_id);
-          if (!matches.length) {
-            matchSelector.innerHTML = '<option value="">No hay matches abiertos</option>';
-            matchSelector.style.display = 'block';
-            loadingBar.style.display = 'none';
-            return;
-          }
-          matchSelector.innerHTML = '<option value="">Selecciona un match...</option>';
-          matches.forEach(m => {
-            const opt = document.createElement('option');
-            opt.value = m.id;
-            opt.textContent = `${m.player1_name} vs ${m.player2_name} (Ronda ${m.round || ''})`;
-            opt.dataset.match = JSON.stringify(m);
-            matchSelector.appendChild(opt);
-          });
-          matchSelector.style.display = 'block';
-          loadingBar.style.display = 'none';
-        } catch (e) {
-          matchSelector.innerHTML = `<option value="">❌ ${e.message}</option>`;
-          matchSelector.style.display = 'block';
-          loadingBar.style.display = 'none';
-        }
+        await cargarMatchesChallonge();
       }
 
       // Cargar todos los torneos de la API en el widget
       async function cargarTorneosDesdeWidget() {
-        const selector = document.getElementById('challongeTournamentSelector');
-        if (!selector) return;
-
-        selector.innerHTML = '<option value="">Cargando torneos...</option>';
-
-        try {
-          const res = await window.__TAURI__.core.invoke('get-tournaments');
-          if (!res.ok) throw new Error(res.error || 'Error al obtener torneos');
-
-          const torneos = res.tournaments || [];
-
-          if (!torneos.length) {
-            selector.innerHTML = '<option value="">No se encontraron torneos</option>';
-            if (window.mostrarNotificacion) {
-              window.mostrarNotificacion('❌ No se encontraron torneos en tu cuenta', 'error');
-            }
-            return;
-          }
-
-          selector.innerHTML = '<option value="">Selecciona un torneo...</option>';
-          torneos.forEach(t => {
-            const opt = document.createElement('option');
-            opt.value = t.url;
-            opt.textContent = t.name + (t.state ? ` (${t.state})` : '');
-            selector.appendChild(opt);
-          });
-
-          if (window.mostrarNotificacion) {
-            window.mostrarNotificacion(`✅ Cargados ${torneos.length} torneo(s) de tu API`, 'success');
-          }
-
-        } catch (e) {
-          selector.innerHTML = `<option value="">❌ ${e.message}</option>`;
-          if (window.mostrarNotificacion) {
-            window.mostrarNotificacion(`❌ Error: ${e.message}`, 'error');
-          }
-        }
+        await cargarTodosLosTorneosChallonge();
       }
 
       // === FUNCIONES TOP 8 CHALLONGE WIDGET ===
@@ -1098,12 +1017,12 @@ Haz lo mismo para los otros métodos relacionados si no existen.
             html += `<td style="text-align:center; font-weight:bold;">${player.final_rank}</td>`;
             html += `<td>${player.name}</td>`;
             html += `<td>
-        <select id="challongeTop8Char${idx}" class="top8-ch-select">
+        <select id="challongeTop8Char${idx}" class="top8-ch-select" onchange="sincronizarCambioTop8('char', ${idx}, this.value)">
           ${(window.listaPersonajes || []).map(char => `<option value="${char}">${char}</option>`).join("")}
         </select>
       </td>`;
             html += `<td>
-        <select id="challongeTop8Twitter${idx}" class="top8-ch-twitter">
+        <select id="challongeTop8Twitter${idx}" class="top8-ch-twitter" onchange="sincronizarCambioTop8('twitter', ${idx}, this.value)">
           <option value="">Seleccionar...</option>
         </select>
       </td>`;

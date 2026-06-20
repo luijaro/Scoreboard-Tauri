@@ -1,10 +1,11 @@
 {
   "name": "scoreboard-tauri",
   "private": true,
-  "version": "1.3.1",
+  "version": "1.3.2",
   "type": "module",
   "scripts": {
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "release": "node scripts/release.js"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"
