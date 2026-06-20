@@ -621,6 +621,29 @@ async function consultarMatchesStartGG(eventIdInput, eventName) {
       window.globalMatchesEnProgreso = matchesEnProgreso;
       window.eventIdActual = eventId;
       window.eventNameActual = eventName;
+
+      // Sincronizar con el widget lateral (menú rápido)
+      const eventSel = document.getElementById('startggEventSelector');
+      if (eventSel) {
+        let optionExists = false;
+        for (let i = 0; i < eventSel.options.length; i++) {
+          if (Number(eventSel.options[i].value) === eventId) {
+            optionExists = true;
+            break;
+          }
+        }
+        if (!optionExists && eventId) {
+          const opt = document.createElement('option');
+          opt.value = eventId;
+          opt.textContent = eventName;
+          eventSel.appendChild(opt);
+        }
+        eventSel.value = eventId;
+        eventSel.style.display = 'block';
+      }
+      if (typeof poblarSelectorMatchesEnWidget === 'function') {
+        poblarSelectorMatchesEnWidget(matchesEnProgreso);
+      }
       // Inicializar resultados vacíos
       filtrarMatchesGlobal();
       

@@ -1880,6 +1880,7 @@ async function cargarTorneosTop8() {
     select.onchange = () => {
       window.ultimoTorneoTop8 = select.value;
       cargarTop8(); // Se carga el Top 8 automáticamente al seleccionar
+      syncChallongeTournament('tournamentTop8');
     };
   } catch (error) {
     select.innerHTML = `<option value="">❌ ${error.message}</option>`;
@@ -1920,6 +1921,7 @@ async function cargarTorneosBracket() {
     select.onchange = async () => {
       window.ultimoTorneoBracket = select.value;
       mostrarBracket();
+      syncChallongeTournament('tournamentBracket');
 
       // Nuevo: obtener y guardar los matches y el top 8 del torneo seleccionado
       if (select.value) {
@@ -1991,7 +1993,7 @@ async function buscarTorneosMatches() {
     // Guardar el último torneo seleccionado cada vez que cambie
     tournamentList.onchange = () => {
       ultimoTorneoMatches = tournamentList.value;
-      // Ya no se llama cargarMatches() aquí
+      syncChallongeTournament('tournamentList');
     };
 
     msg.textContent = torneosOrdenados.length > 0
@@ -2361,17 +2363,83 @@ async function guardarTimerEnScoreboard(timestamp) {
 
 // Al cargar la pestaña comentaristas, mostrar el timer si existe
 async function cargarTimerAlAbrir() {
-  // Siempre resetear el timer al cargar - no importa lo que diga el JSON
+  try {
+    const resLoad = await window.__TAURI__.core.invoke('load-json', { tipo: 'timestamp' });
+    if (resLoad.ok && resLoad.data && resLoad.data.timerEndTimestamp) {
+      const end = Number(resLoad.data.timerEndTimestamp);
+      const ahora = Date.now();
+      if (end > ahora) {
+        timerEndTimestamp = end;
+        mostrarTimer(timerEndTimestamp - ahora);
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+          const restante = timerEndTimestamp - Date.now();
+          if (restante <= 0) {
+            mostrarTimer(0);
+            clearInterval(timerInterval);
+            document.getElementById('msgTimer').textContent = '⏰ ¡Tiempo finalizado!';
+            setTimeout(() => document.getElementById('msgTimer').textContent = '', 3000);
+          } else {
+            mostrarTimer(restante);
+          }
+        }, 1000);
+        return;
+      }
+    }
+  } catch (e) {
+    console.warn('Error al cargar timer desde JSON:', e);
+  }
+
+  // Fallback / Reset si no hay timer activo
   mostrarTimer(0);
   timerEndTimestamp = null;
   if (timerInterval) {
     clearInterval(timerInterval);
     timerInterval = null;
   }
-  // Asegurar que el display siempre muestre 00:00 al inicio
-  const timerDisplay = document.getElementById('timerDisplay');
-  if (timerDisplay && !timerDisplay.textContent) {
-    timerDisplay.textContent = '00:00';
+}
+
+// Sincronizar todos los selectores de torneo de Challonge para que actúen como espejo
+function syncChallongeTournament(changedId) {
+  const changedEl = document.getElementById(changedId);
+  if (!changedEl) return;
+  const val = changedEl.value;
+  const selectedText = changedEl.options[changedEl.selectedIndex]?.textContent || '';
+
+  const ids = ['challongeTournamentSelector', 'tournamentList', 'tournamentBracket', 'tournamentTop8'];
+  let updatedAny = false;
+
+  ids.forEach(id => {
+    if (id === changedId) return;
+    const el = document.getElementById(id);
+    if (el) {
+      if (el.value === val) return; // Ya sincronizado
+      
+      // Asegurar que la opción exista en el destino
+      let optionExists = false;
+      for (let i = 0; i < el.options.length; i++) {
+        if (el.options[i].value === val) {
+          optionExists = true;
+          break;
+        }
+      }
+      if (!optionExists && val) {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = selectedText;
+        el.appendChild(opt);
+      }
+      el.value = val;
+      el.dispatchEvent(new Event('change'));
+      updatedAny = true;
+    }
+  });
+
+  // Si se actualizó el selector del widget, cargar los matches automáticamente
+  if (updatedAny && changedId !== 'challongeTournamentSelector') {
+    if (typeof cargarMatchesChallongeDesdeWidget === 'function') {
+      cargarMatchesChallongeDesdeWidget();
+    }
   }
 }
 

@@ -1220,7 +1220,7 @@ Haz lo mismo para los otros métodos relacionados si no existen.
         };
 
         try {
-          const res = await window.__TAURI__.core.invoke('save-json', dataToSave, 'top8');
+          const res = await window.__TAURI__.core.invoke('save-json', { data: dataToSave, tipo: 'top8' });
           if (res.ok) {
             if (window.mostrarNotificacion) {
               window.mostrarNotificacion('✅ Top 8 guardado correctamente', 'success');
@@ -1357,7 +1357,7 @@ Haz lo mismo para los otros métodos relacionados si no existen.
             participantes: participantes
           };
 
-          const saveRes = await window.__TAURI__.core.invoke('save-json', bracketData, 'bracket');
+          const saveRes = await window.__TAURI__.core.invoke('save-json', { data: bracketData, tipo: 'bracket' });
 
           if (saveRes.ok) {
             if (window.mostrarNotificacion) {
