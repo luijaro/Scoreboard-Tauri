@@ -1436,7 +1436,7 @@ Haz lo mismo para los otros métodos relacionados si no existen.
           const eventId = parseInt(eventSelector.value); // Asegurar que sea un número
           console.log('[Top8Widget] Cargando Top 8 para evento ID:', eventId, 'tipo:', typeof eventId);
 
-          const response = await window.__TAURI__.core.invoke('startgg-get-standings', eventId);
+          const response = await window.__TAURI__.core.invoke('startgg-get-standings', { eventId });
 
           console.log('[Top8Widget] Respuesta completa de Start.gg:', response);
 

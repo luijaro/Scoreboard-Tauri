@@ -50,7 +50,7 @@ async function buscarStartGG(busquedaTexto = null) {
       // Si no viene el estado, solo entonces consulta por evento
       if (!evState) {
         try {
-          const evRes = await window.__TAURI__.core.invoke('startgg-get-event-state', { eventId: ev.id });
+          const evRes = await window.__TAURI__.core.invoke('startgg-get-event-state', { eventId: Number(ev.id) });
           const evState2 = evRes?.state || evRes?.event?.state || evRes?.status || '';
           if (evState2 === 'ACTIVE') estadoEv = '<span class="status-badge success">En progreso</span>';
           else if (evState2 === 'COMPLETED') estadoEv = '<span class="status-badge warning">Terminado</span>';
@@ -85,9 +85,10 @@ async function buscarStartGG(busquedaTexto = null) {
 
 
 // Guardar el bracket directamente al hacer clic en el botón Bracket
-async function guardarBracketStartGG(eventId, eventName) {
+async function guardarBracketStartGG(eventIdInput, eventName) {
+  const eventId = Number(eventIdInput);
   // Buscar el botón específico que fue clickeado
-  const btn = document.querySelector(`button[onclick*="guardarBracketStartGG(${eventId},"]`);
+  const btn = document.querySelector(`button[onclick*="guardarBracketStartGG(${eventIdInput},"]`);
   if (!btn) return;
 
   // Inyectar CSS para la animación
@@ -198,7 +199,7 @@ async function consultarStartGG(slug) {
         let estadoEv = '';
         try {
           // Consulta el estado del evento
-          const evRes = await window.__TAURI__.core.invoke('startgg-get-event-state', { eventId: ev.id });
+          const evRes = await window.__TAURI__.core.invoke('startgg-get-event-state', { eventId: Number(ev.id) });
           const evState = evRes?.state || evRes?.event?.state || evRes?.status || '';
           if (evState === 'ACTIVE') estadoEv = '<span style=\"color:#27ae60;font-weight:bold;\">En progreso</span>';
           else if (evState === 'COMPLETED') estadoEv = '<span style=\"color:#e67e22;font-weight:bold;\">Terminado</span>';
@@ -225,7 +226,8 @@ async function consultarStartGG(slug) {
 }
 
 // Generar Top 8 real usando standings de Start.gg y guardar en top8.json
-async function generarTop8StartGG(eventId, eventName) {
+async function generarTop8StartGG(eventIdInput, eventName) {
+  const eventId = Number(eventIdInput);
   const resultsDiv = document.getElementById('startggResults');
   resultsDiv.textContent = 'Generando Top 8...';
   try {
@@ -463,7 +465,8 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-async function consultarMatchesStartGG(eventId, eventName) {
+async function consultarMatchesStartGG(eventIdInput, eventName) {
+  const eventId = Number(eventIdInput);
   const resultsDiv = document.getElementById('startggResults');
   resultsDiv.textContent = "Buscando brackets del evento...";
   try {
@@ -981,7 +984,7 @@ async function guardarBracketEnJson(torneo, fecha, sets) {
   sets.forEach(set => {
     if (set.phaseId || set.phase_id) phaseIdSet.add(set.phaseId || set.phase_id);
   });
-  const phaseIds = Array.from(phaseIdSet);
+  const phaseIds = Array.from(phaseIdSet).map(Number);
 
   // Log para depuración
   console.log('[Bracket] phaseIds:', phaseIds);
@@ -1187,7 +1190,7 @@ async function cargarMatchesDelEvento() {
   const eventName = selectedOption.dataset.eventName;
 
   // Guardar datos del evento actual
-  window.eventIdActual = selectedEventId;
+  window.eventIdActual = Number(selectedEventId);
   window.eventNameActual = eventName;
 
   // Mostrar barra de loading
@@ -1196,7 +1199,7 @@ async function cargarMatchesDelEvento() {
 
   try {
     // Consultar matches del evento
-    const res = await window.__TAURI__.core.invoke('startgg-get-matches', { eventId: selectedEventId });
+    const res = await window.__TAURI__.core.invoke('startgg-get-matches', { eventId: Number(selectedEventId) });
     if (res.error) {
       throw new Error(res.error);
     }
