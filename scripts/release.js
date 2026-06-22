@@ -61,13 +61,47 @@ try {
 }
 
 // 7. Publish to GitHub Releases
-console.log('🚀 Subiendo binarios de release a GitHub...');
+console.log('🚀 Generando updater metadata (latest.json)...');
 const nsisPath = `src-tauri/target/release/bundle/nsis/Streamcontrol MS_${newVersion}_x64-setup.exe`;
 const msiPath = `src-tauri/target/release/bundle/msi/Streamcontrol MS_${newVersion}_x64_en-US.msi`;
+const sigPath = `src-tauri/target/release/bundle/nsis/Streamcontrol MS_${newVersion}_x64-setup.exe.sig`;
+const latestJsonPath = `src-tauri/target/release/bundle/nsis/latest.json`;
 
+let updaterJsonCreated = false;
 try {
-  execSync(`gh release create v${newVersion} "${nsisPath}" "${msiPath}" --title "v${newVersion}" --notes "Release v${newVersion}"`, { stdio: 'inherit' });
+  if (fs.existsSync(sigPath)) {
+    const signature = fs.readFileSync(sigPath, 'utf8').trim();
+    const latestJson = {
+      version: newVersion,
+      notes: `Release v${newVersion}`,
+      pub_date: new Date().toISOString(),
+      platforms: {
+        "windows-x86_64": {
+          signature: signature,
+          url: `https://github.com/luijaro/Scoreboard-Tauri/releases/download/v${newVersion}/Streamcontrol.MS_${newVersion}_x64-setup.exe`
+        }
+      }
+    };
+    fs.writeFileSync(latestJsonPath, JSON.stringify(latestJson, null, 2), 'utf8');
+    console.log('✅ latest.json generado correctamente.');
+    updaterJsonCreated = true;
+  } else {
+    console.warn('⚠️ Advertencia: No se encontró el archivo de firma (.sig). Asegúrate de que TAURI_SIGNING_PRIVATE_KEY esté configurada.');
+  }
+} catch (e) {
+  console.error('❌ Error al generar latest.json:', e);
+}
+
+console.log('🚀 Subiendo binarios de release a GitHub...');
+try {
+  const assetsToUpload = [nsisPath, msiPath];
+  if (updaterJsonCreated) {
+    assetsToUpload.push(latestJsonPath);
+  }
+  const assetsString = assetsToUpload.map(p => `"${p}"`).join(' ');
+  execSync(`gh release create v${newVersion} ${assetsString} --title "v${newVersion}" --notes "Release v${newVersion}"`, { stdio: 'inherit' });
   console.log(`🎉 ¡Éxito! La versión v${newVersion} ha sido compilada, subida a GitHub Releases y confirmada en Git.`);
 } catch (e) {
   console.error('❌ Error al subir la release a GitHub. Verifica que tengas el CLI de gh instalado y autenticado.');
 }
+

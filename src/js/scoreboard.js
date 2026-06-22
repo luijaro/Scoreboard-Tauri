@@ -2610,7 +2610,41 @@ document.addEventListener('DOMContentLoaded', () => {
       syncChallongeMatch('challongeMatchSelector');
     });
   }
+
+  // Obtener versión de la app y actualizar título y footer
+  window.__TAURI__.core.invoke('get-app-version')
+    .then(version => {
+      document.title = `Streamcontrol MS - v${version}`;
+      const txtVersion = document.getElementById('txtAppVersion');
+      if (txtVersion) {
+        txtVersion.textContent = `v${version}`;
+      }
+    })
+    .catch(err => console.error('Error al obtener la versión:', err));
 });
+
+// Función global para buscar actualizaciones manualmente
+async function buscarActualizacionManual() {
+  const btn = document.getElementById('btnManualUpdate');
+  const originalHTML = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa fa-rotate fa-spin"></i> Buscando...`;
+  }
+  try {
+    await window.__TAURI__.core.invoke('check-for-updates-manual');
+  } catch (err) {
+    console.error('Error al buscar actualizaciones:', err);
+    if (window.mostrarNotificacion) {
+      window.mostrarNotificacion(`❌ Error: ${err}`, 'error');
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHTML || `<i class="fa fa-rotate"></i> Buscar actualización`;
+    }
+  }
+}
 
 
 

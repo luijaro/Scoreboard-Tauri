@@ -1419,14 +1419,21 @@ body {
   position: fixed;
   right: 24px;
   bottom: 16px;
-  color: #aaa;
-  font-size: 1.08em;
-  opacity: 0.85;
-  letter-spacing: 1px;
-  font-weight: bold;
-  z-index: 999;
-  pointer-events: none;
+  color: #fff;
+  font-size: 0.95em;
+  opacity: 0.95;
+  z-index: 9999;
   user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(30, 31, 38, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
 
 .top8-table th, .top8-table td {

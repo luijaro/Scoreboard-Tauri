@@ -19,6 +19,58 @@ fn get_file_path(tipo: &str) -> PathBuf {
     path
 }
 
+#[tauri::command(rename = "get-app-version")]
+fn get_app_version(app: tauri::AppHandle) -> String {
+    app.package_info().version.to_string()
+}
+
+#[tauri::command(rename = "check-for-updates-manual")]
+async fn check_for_updates_manual(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
+    use tauri_plugin_updater::UpdaterExt;
+    use tauri_plugin_dialog::DialogExt;
+    
+    let check_result = match app.updater() {
+        Ok(updater) => updater.check().await,
+        Err(e) => Err(e),
+    };
+    
+    match check_result {
+        Ok(Some(update)) => {
+            let is_confirmed = app.dialog()
+                .message(format!("Una nueva versión (v{}) está disponible. ¿Deseas descargarla e instalarla ahora?", update.version))
+                .title("Actualización Disponible")
+                .kind(tauri_plugin_dialog::MessageDialogKind::Info)
+                .buttons(tauri_plugin_dialog::MessageDialogButtons::YesNo)
+                .blocking_show();
+                
+            if is_confirmed {
+                match update.download_and_install(|_, _| {}, || {}).await {
+                    Ok(_) => {
+                        app.restart();
+                        Ok(serde_json::json!({ "ok": true, "updated": true }))
+                    },
+                    Err(e) => {
+                        Err(e.to_string())
+                    }
+                }
+            } else {
+                Ok(serde_json::json!({ "ok": true, "updated": false }))
+            }
+        },
+        Ok(None) => {
+            let _ = app.dialog()
+                .message("No hay actualizaciones disponibles. Tu aplicación está al día.")
+                .title("Sin Actualizaciones")
+                .kind(tauri_plugin_dialog::MessageDialogKind::Info)
+                .blocking_show();
+            Ok(serde_json::json!({ "ok": true, "updated": false }))
+        },
+        Err(e) => {
+            Err(e.to_string())
+        }
+    }
+}
+
 #[tauri::command(rename = "elegir-ruta")]
 async fn elegir_ruta(app: tauri::AppHandle, tipo: String) -> Result<serde_json::Value, String> {
     use tauri_plugin_dialog::DialogExt;
@@ -280,6 +332,8 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            get_app_version,
+            check_for_updates_manual,
             elegir_ruta,
             guardar_rutas,
             cargar_rutas,
