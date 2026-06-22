@@ -47,7 +47,6 @@ async fn check_for_updates_manual(app: tauri::AppHandle) -> Result<serde_json::V
                 match update.download_and_install(|_, _| {}, || {}).await {
                     Ok(_) => {
                         app.restart();
-                        Ok(serde_json::json!({ "ok": true, "updated": true }))
                     },
                     Err(e) => {
                         Err(e.to_string())
@@ -83,6 +82,51 @@ async fn elegir_ruta(app: tauri::AppHandle, tipo: String) -> Result<serde_json::
         Ok(serde_json::json!({
             "ok": true,
             "ruta": path.to_string()
+        }))
+    } else {
+        Ok(serde_json::json!({ "ok": false }))
+    }
+}
+
+#[tauri::command(rename = "elegir-directorio-workspace")]
+async fn elegir_directorio_workspace(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
+    use tauri_plugin_dialog::DialogExt;
+    let folder_path = tokio::task::spawn_blocking(move || {
+        app.dialog().file().blocking_pick_folder()
+    }).await.map_err(|e| e.to_string())?;
+
+    if let Some(folder) = folder_path {
+        let folder_str = folder.to_string();
+        let folder_pathbuf = std::path::PathBuf::from(&folder_str);
+        
+        let json_files = vec!["scoreboard.json", "casters.json", "timestamp.json", "bracket.json", "top8.json", "apikey.json"];
+        let txt_files = vec!["usuarios.txt"];
+        
+        let mut result_paths = std::collections::HashMap::new();
+
+        for file_name in json_files {
+            let mut path = folder_pathbuf.clone();
+            path.push(file_name);
+            if !path.exists() {
+                let _ = fs::write(&path, "{}");
+            }
+            let key = file_name.strip_suffix(".json").unwrap_or(file_name);
+            result_paths.insert(key.to_string(), path.to_string_lossy().to_string());
+        }
+
+        for file_name in txt_files {
+            let mut path = folder_pathbuf.clone();
+            path.push(file_name);
+            if !path.exists() {
+                let _ = fs::write(&path, "");
+            }
+            let key = file_name.strip_suffix(".txt").unwrap_or(file_name);
+            result_paths.insert(key.to_string(), path.to_string_lossy().to_string());
+        }
+
+        Ok(serde_json::json!({
+            "ok": true,
+            "rutas": result_paths
         }))
     } else {
         Ok(serde_json::json!({ "ok": false }))
@@ -335,6 +379,7 @@ pub fn run() {
             get_app_version,
             check_for_updates_manual,
             elegir_ruta,
+            elegir_directorio_workspace,
             guardar_rutas,
             cargar_rutas,
             save_json,

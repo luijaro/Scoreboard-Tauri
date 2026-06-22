@@ -524,6 +524,16 @@ Haz lo mismo para los otros métodos relacionados si no existen.
             Selecciona la ubicación de cada archivo JSON que utiliza la aplicación.<br>
             Puedes dejar una ruta vacía para usar la ubicación por defecto.
           </div>
+
+          <div style="text-align: center; margin-bottom: 2em; padding-bottom: 1.5em; border-bottom: 1px solid var(--border-color);">
+            <button class="sb-btn btn-success" id="btnWorkspaceMain" style="font-size: 1.1em; padding: 0.6em 1.5em; box-shadow: 0 4px 6px rgba(0,0,0,0.2);" onclick="elegirDirectorioWorkspace(this)">
+              Elegir Carpeta de Proyecto
+            </button>
+            <div style="margin-top: 0.8em; font-size: 0.9em;" class="text-muted">
+              Selecciona una carpeta para configurar/crear todos los archivos automáticamente.
+            </div>
+          </div>
+          
           <div class="form-row" style="margin-bottom:1.2em; align-items:center;">
             <label for="rutaScoreboard" style="min-width:160px;">Scoreboard JSON:</label>
             <input id="rutaScoreboard" class="sb-input" readonly>
@@ -582,6 +592,36 @@ Haz lo mismo para los otros métodos relacionados si no existen.
           button.textContent = 'Mostrar Controles';
         } else {
           button.textContent = 'Ocultar Controles';
+        }
+      }
+
+      async function elegirDirectorioWorkspace(btn) {
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Procesando...';
+        }
+        const res = await window.__TAURI__.core.invoke('elegir-directorio-workspace');
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Elegir Carpeta de Proyecto';
+        }
+        
+        if (res.ok && res.rutas) {
+          function rutaId(tipo) {
+            if (tipo === 'apikey') return 'rutaApiKey';
+            return 'ruta' + tipo.charAt(0).toUpperCase() + tipo.slice(1);
+          }
+          for (const tipo of ['scoreboard', 'casters', 'timestamp', 'bracket', 'top8', 'apikey', 'usuarios']) {
+            if (res.rutas[tipo] && document.getElementById(rutaId(tipo))) {
+              document.getElementById(rutaId(tipo)).value = res.rutas[tipo];
+            }
+          }
+          if (typeof guardarTodasLasRutas === 'function') {
+            await guardarTodasLasRutas();
+          }
+          mostrarNotificacion('¡Carpeta de proyecto configurada correctamente!', 'success');
+        } else if (res.ok === false) {
+          mostrarNotificacion('No se seleccionó ninguna carpeta.', 'error');
         }
       }
     </script>
