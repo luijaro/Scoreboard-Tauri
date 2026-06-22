@@ -213,9 +213,63 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let handle = app.handle().clone();
-            streamdeck::start_server(handle);
+            streamdeck::start_server(handle.clone());
+            
+            // Hilo de actualización automática
+            tauri::async_runtime::spawn(async move {
+                // Esperar 4 segundos para que se cargue la interfaz
+                tokio::time::sleep(std::time::Duration::from_secs(4)).await;
+                println!("[Updater] Checking for updates...");
+                
+                use tauri_plugin_updater::UpdaterExt;
+                use tauri_plugin_dialog::DialogExt;
+                
+                let check_result = match handle.updater() {
+                    Ok(updater) => updater.check().await,
+                    Err(e) => Err(e),
+                };
+                
+                match check_result {
+                    Ok(Some(update)) => {
+                        println!("[Updater] New version found: {}", update.version);
+                        
+                        let is_confirmed = handle.dialog()
+                            .message(format!("Una nueva versión (v{}) está disponible. ¿Deseas descargarla e instalarla ahora?", update.version))
+                            .title("Actualización Disponible")
+                            .kind(tauri_plugin_dialog::MessageDialogKind::Info)
+                            .buttons(tauri_plugin_dialog::MessageDialogButtons::YesNo)
+                            .blocking_show();
+                            
+                        if is_confirmed {
+                            println!("[Updater] Starting download and install...");
+                            match update.download_and_install(|_, _| {}, || {}).await {
+                                Ok(_) => {
+                                    println!("[Updater] Update installed successfully, restarting app...");
+                                    handle.restart();
+                                },
+                                Err(e) => {
+                                    println!("[Updater] Error downloading/installing update: {}", e);
+                                    let _ = handle.dialog()
+                                        .message(format!("Error al instalar la actualización: {}", e))
+                                        .title("Error de Actualización")
+                                        .kind(tauri_plugin_dialog::MessageDialogKind::Error)
+                                        .blocking_show();
+                                }
+                            }
+                        }
+                    },
+                    Ok(None) => {
+                        println!("[Updater] No updates found.");
+                    },
+                    Err(e) => {
+                        println!("[Updater] Error checking for updates: {}", e);
+                    }
+                }
+            });
+
             #[cfg(debug_assertions)]
             {
                 use tauri::Manager;

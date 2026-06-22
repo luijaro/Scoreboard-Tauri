@@ -1643,22 +1643,122 @@ function generarMensajeTop8(nombreTorneo, top8) {
   return mensaje;
 }
 
+function abrirVentanaMensajeTop8(mensaje) {
+  const popup = window.open('', '_blank', 'width=500,height=600');
+  if (popup) {
+    popup.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Mensaje de Top 8</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <style>
+          body {
+            font-family: 'Inter', sans-serif;
+            background-color: #12131a;
+            color: #ffffff;
+            margin: 0;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            height: 100vh;
+            box-sizing: border-box;
+          }
+          h2 {
+            margin-top: 0;
+            font-size: 1.3em;
+            color: #ffd700;
+            text-align: center;
+          }
+          textarea {
+            flex: 1;
+            background-color: #1b1c23;
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 0.95em;
+            resize: none;
+            outline: none;
+            white-space: pre-wrap;
+            margin-bottom: 16px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+          }
+          textarea:focus {
+            border-color: #5e5ce6;
+          }
+          .btn-container {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+          }
+          button {
+            padding: 10px 20px;
+            font-size: 0.95em;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            transition: opacity 0.15s;
+          }
+          button:hover {
+            opacity: 0.9;
+          }
+          .copy-btn {
+            background-color: #5e5ce6;
+            color: white;
+          }
+          .close-btn {
+            background-color: #2c2c2e;
+            color: #ebebf599;
+          }
+        </style>
+      </head>
+      <body>
+        <h2>🏆 Mensaje Top 8 Generado</h2>
+        <textarea id="messageArea" readonly>${mensaje.replace(/`/g, '\\`').replace(/\$/g, '\\$')}</textarea>
+        <div class="btn-container">
+          <button class="close-btn" onclick="window.close()">Cerrar</button>
+          <button class="copy-btn" id="copyBtn">Copiar</button>
+        </div>
+        <script>
+          document.getElementById('copyBtn').onclick = () => {
+            const textarea = document.getElementById('messageArea');
+            textarea.select();
+            document.execCommand('copy');
+            const btn = document.getElementById('copyBtn');
+            const originalText = btn.textContent;
+            btn.textContent = '¡Copiado!';
+            setTimeout(() => {
+              btn.textContent = originalText;
+            }, 2000);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    popup.document.close();
+  }
+}
+
 function mostrarMensajeTop8(nombreTorneo, top8) {
   top8 = top8.slice().sort((a, b) => a.final_rank - b.final_rank);
   const mensaje = generarMensajeTop8(nombreTorneo, top8);
-  document.getElementById('mensajeTop8Text').value = mensaje;
+  abrirVentanaMensajeTop8(mensaje);
 }
 
 function copiarMensajeTop8() {
-  const textarea = document.getElementById('mensajeTop8Text');
-  textarea.select();
-  textarea.setSelectionRange(0, 99999); // Para móviles
-  document.execCommand('copy');
-  mostrarNotificacion("¡Mensaje copiado!", "success");
+  mostrarNotificacion("Usa el botón Copiar en la ventana emergente del mensaje", "info");
 }
 
 function generarMensajeTop8DesdeInputs() {
   const tbody = document.getElementById('top8Table');
+  if (!tbody || !tbody.children.length) {
+    mostrarNotificacion("❌ No hay datos de Top 8 para generar", "error");
+    return;
+  }
   let mensaje = `Resultados ${window.nombreTorneoActual || ""}\n\n`;
   for (let i = 0; i < tbody.children.length; ++i) {
     const puesto = tbody.children[i].children[0].textContent;
@@ -1671,7 +1771,7 @@ function generarMensajeTop8DesdeInputs() {
     mensaje += `${puesto}) ${twitter}\n`;
   }
   mensaje += `\n¡Gracias por participar!`;
-  document.getElementById('mensajeTop8Text').value = mensaje;
+  abrirVentanaMensajeTop8(mensaje);
 }
 
 // ================================

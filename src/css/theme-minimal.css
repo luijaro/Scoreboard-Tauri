@@ -290,11 +290,14 @@ body {
 }
 
 .sb-comm-row {
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
   display: flex;
   justify-content: center;
-  gap: 32px;
-  margin-top: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin: 16px auto 0 auto;
 }
 
 .sb-comm-row span {

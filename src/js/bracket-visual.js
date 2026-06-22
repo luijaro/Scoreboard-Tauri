@@ -27,7 +27,7 @@ async function renderBracketVisual() {
 
   // Detecta el número de ronda más alto en winners
   const winnerRounds = res.matches.filter(m => m.round > 0).map(m => m.round);
-  const maxWinnerRound = Math.max(...winnerRounds);
+  const maxWinnerRound = winnerRounds.length > 0 ? Math.max(...winnerRounds) : 1;
   const rondas = {};
   res.matches.forEach(m => {
     const ronda = Number(m.round);
