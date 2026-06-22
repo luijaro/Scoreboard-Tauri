@@ -60,62 +60,51 @@ pub async fn startgg_get_matches(event_id: i64) -> Result<serde_json::Value, Str
     let mut all_sets = vec![];
     let client = Client::new();
 
-    // 1. Fetch phases
-    let query_phases = format!(r#"
-      query EventPhases {{
-        event(id: {}) {{
-          phases {{ id name }}
-        }}
-      }}
-    "#, event_id);
-
-    let res = client.post("https://api.start.gg/gql/alpha")
-        .header("Authorization", format!("Bearer {}", token))
-        .json(&serde_json::json!({ "query": query_phases }))
-        .send().await.map_err(|e| e.to_string())?;
-    
-    let data_phases: Value = res.json().await.map_err(|e| e.to_string())?;
-    let phases = data_phases.pointer("/data/event/phases").and_then(|p| p.as_array()).cloned().unwrap_or_default();
-
-    if !phases.is_empty() {
-        for phase in phases {
-            let phase_id = phase["id"].as_i64().unwrap_or(0);
-            let phase_name = phase["name"].as_str().unwrap_or("");
-            
-            for page in 1..=10 { // max 10 pages to prevent infinite loops
-                let query_sets = format!(r#"
-                  query PhaseSets {{
-                    phase(id: {}) {{
-                      sets(perPage: 100, page: {}) {{
-                        nodes {{
-                          id
-                          fullRoundText
-                          slots {{
-                            entrant {{ name }}
-                            standing {{ stats {{ score {{ value }} }} }}
-                          }}
-                        }}
-                      }}
+    // Consultamos los sets directamente a nivel del Evento para evitar múltiples llamadas en serie por cada fase
+    for page in 1..=5 { // max 5 páginas (hasta 500 matches) para cubrir casi cualquier torneo local/regional rápidamente
+        let query_sets = format!(r#"
+          query EventSets {{
+            event(id: {}) {{
+              sets(perPage: 100, page: {}) {{
+                nodes {{
+                  id
+                  fullRoundText
+                  slots {{
+                    entrant {{ name }}
+                    standing {{ stats {{ score {{ value }} }} }}
+                  }}
+                  phaseGroup {{
+                    id
+                    phase {{
+                      id
+                      name
                     }}
                   }}
-                "#, phase_id, page);
+                }}
+              }}
+            }}
+          }}
+        "#, event_id, page);
 
-                let res = client.post("https://api.start.gg/gql/alpha")
-                    .header("Authorization", format!("Bearer {}", token))
-                    .json(&serde_json::json!({ "query": query_sets }))
-                    .send().await.map_err(|e| e.to_string())?;
-                
-                let data: Value = res.json().await.map_err(|e| e.to_string())?;
-                let sets = data.pointer("/data/phase/sets/nodes").and_then(|p| p.as_array()).cloned().unwrap_or_default();
-                
-                if sets.is_empty() { break; }
-                
-                for mut set in sets {
-                    set.as_object_mut().unwrap().insert("phaseId".to_string(), serde_json::json!(phase_id));
-                    set.as_object_mut().unwrap().insert("fase".to_string(), serde_json::json!(phase_name));
-                    all_sets.push(set);
-                }
+        let res = client.post("https://api.start.gg/gql/alpha")
+            .header("Authorization", format!("Bearer {}", token))
+            .json(&serde_json::json!({ "query": query_sets }))
+            .send().await.map_err(|e| e.to_string())?;
+        
+        let data: Value = res.json().await.map_err(|e| e.to_string())?;
+        let sets = data.pointer("/data/event/sets/nodes").and_then(|p| p.as_array()).cloned().unwrap_or_default();
+        
+        if sets.is_empty() { break; }
+        
+        for mut set in sets {
+            let phase_id = set.pointer("/phaseGroup/phase/id").and_then(|id| id.as_i64()).unwrap_or(0);
+            let phase_name = set.pointer("/phaseGroup/phase/name").and_then(|n| n.as_str()).unwrap_or("").to_string();
+            
+            if let Some(obj) = set.as_object_mut() {
+                obj.insert("phaseId".to_string(), serde_json::json!(phase_id));
+                obj.insert("fase".to_string(), serde_json::json!(phase_name));
             }
+            all_sets.push(set);
         }
     }
 
