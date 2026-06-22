@@ -1,7 +1,7 @@
 {
   "name": "scoreboard-tauri",
   "private": true,
-  "version": "2.0.4",
+  "version": "2.0.11",
   "type": "module",
   "scripts": {
     "tauri": "tauri",

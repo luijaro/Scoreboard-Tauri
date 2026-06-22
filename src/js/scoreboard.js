@@ -1044,8 +1044,24 @@ async function cambiarJuego() {
     llenarSelectPersonajes('p1CharSelect');
     llenarSelectPersonajes('p2CharSelect');
     for (let i = 0; i < 8; ++i) llenarSelectPersonajes('top8char' + i);
-    if (document.getElementById('p1CharSelect')) document.getElementById('p1CharSelect').value = selectedChars.p1Char;
-    if (document.getElementById('p2CharSelect')) document.getElementById('p2CharSelect').value = selectedChars.p2Char;
+    
+    const p1Select = document.getElementById('p1CharSelect');
+    if (p1Select) {
+      if (selectedChars.p1Char && listaPersonajes.includes(selectedChars.p1Char)) {
+        p1Select.value = selectedChars.p1Char;
+      } else {
+        p1Select.value = listaPersonajes[0] || '';
+      }
+    }
+    const p2Select = document.getElementById('p2CharSelect');
+    if (p2Select) {
+      if (selectedChars.p2Char && listaPersonajes.includes(selectedChars.p2Char)) {
+        p2Select.value = selectedChars.p2Char;
+      } else {
+        p2Select.value = listaPersonajes[0] || '';
+      }
+    }
+
     for (let i = 0; i < 8; ++i) {
       const select = document.getElementById('top8char' + i);
       if (select) select.value = selectedTop8Chars[i];
@@ -1058,8 +1074,16 @@ async function cambiarJuego() {
     llenarSelectPersonajes('p1CharSelect');
     llenarSelectPersonajes('p2CharSelect');
     for (let i = 0; i < 8; ++i) llenarSelectPersonajes('top8char' + i);
-    if (document.getElementById('p1CharSelect')) document.getElementById('p1CharSelect').value = selectedChars.p1Char;
-    if (document.getElementById('p2CharSelect')) document.getElementById('p2CharSelect').value = selectedChars.p2Char;
+    
+    const p1Select = document.getElementById('p1CharSelect');
+    if (p1Select) {
+      p1Select.value = '';
+    }
+    const p2Select = document.getElementById('p2CharSelect');
+    if (p2Select) {
+      p2Select.value = '';
+    }
+
     for (let i = 0; i < 8; ++i) {
       const select = document.getElementById('top8char' + i);
       if (select) select.value = selectedTop8Chars[i];
