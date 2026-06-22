@@ -78,7 +78,7 @@ try {
       platforms: {
         "windows-x86_64": {
           signature: signature,
-          url: `https://github.com/luijaro/Scoreboard-Tauri/releases/download/v${newVersion}/Streamcontrol%20MS_${newVersion}_x64-setup.exe`
+          url: `https://github.com/luijaro/Scoreboard-Tauri/releases/download/v${newVersion}/Streamcontrol.MS_${newVersion}_x64-setup.exe`
         }
       }
     };
