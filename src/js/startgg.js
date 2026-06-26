@@ -489,9 +489,9 @@ async function consultarMatchesStartGG(eventIdInput, eventName) {
         return;
       }
       
-      // Extraer brackets únicos solo de los matches en progreso
+      // Extraer brackets únicos de todos los matches (no solo los en progreso)
       const bracketsMap = new Map();
-      matchesEnProgreso.forEach(set => {
+      res.sets.forEach(set => {
         const fase = set.fase || 'Sin fase';
         const round = set.fullRoundText || 'Sin ronda';
         

@@ -21,7 +21,7 @@ async fn get_challonge_token() -> Result<String, String> {
 #[tauri::command(rename = "get-tournaments")]
 pub async fn get_tournaments() -> Result<serde_json::Value, String> {
     let token = get_challonge_token().await?;
-    let url = format!("https://api.challonge.com/v1/tournaments.json?api_key={}", token);
+    let url = format!("https://api.challonge.com/v1/tournaments.json?state=all&api_key={}", token);
     
     let client = Client::new();
     let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
@@ -122,7 +122,7 @@ pub async fn get_matches_and_participants(slug: String) -> Result<serde_json::Va
     
     let url_tournament = format!("https://api.challonge.com/v1/tournaments/{}.json?api_key={}", slug, token);
     let url_part = format!("https://api.challonge.com/v1/tournaments/{}/participants.json?api_key={}", slug, token);
-    let url_match = format!("https://api.challonge.com/v1/tournaments/{}/matches.json?api_key={}", slug, token);
+    let url_match = format!("https://api.challonge.com/v1/tournaments/{}/matches.json?state=all&api_key={}", slug, token);
     
     let (t_res, p_res, m_res) = tokio::join!(
         client.get(&url_tournament).send(),
@@ -140,7 +140,9 @@ pub async fn get_matches_and_participants(slug: String) -> Result<serde_json::Va
     if let Some(arr) = p_data.as_array() {
         for p in arr {
             if let Some(part) = p.get("participant") {
-                if let (Some(id), Some(name)) = (part.get("id").and_then(|v| v.as_i64()), part.get("name").and_then(|v| v.as_str())) {
+                let id_opt = part.get("id").and_then(|v| v.as_i64());
+                let name_opt = part.get("name").and_then(|v| v.as_str()).filter(|s| !s.trim().is_empty()).or_else(|| part.get("display_name").and_then(|v| v.as_str()));
+                if let (Some(id), Some(name)) = (id_opt, name_opt) {
                     let obj = serde_json::json!({ "id": id, "name": name });
                     participantes.insert(id, name.to_string());
                     part_list.push(obj);
@@ -161,7 +163,7 @@ pub async fn get_matches_and_participants(slug: String) -> Result<serde_json::Va
                 let p1_name = participantes.get(&p1_id).cloned().unwrap_or_else(|| "TBD".to_string());
                 let p2_name = participantes.get(&p2_id).cloned().unwrap_or_else(|| "TBD".to_string());
                 
-                if state == "open" && (winner_id.is_none() || winner_id.unwrap().is_null()) && p1_name != "TBD" && p2_name != "TBD" {
+                if state != "complete" && (winner_id.is_none() || winner_id.unwrap().is_null()) && p1_name != "TBD" && p2_name != "TBD" {
                     matches.push(serde_json::json!({
                         "id": mat.get("id"),
                         "player1_id": p1_id,
@@ -197,7 +199,7 @@ pub async fn get_all_matches_and_participants(slug: String) -> Result<serde_json
     let client = Client::new();
     
     let url_part = format!("https://api.challonge.com/v1/tournaments/{}/participants.json?api_key={}", slug, token);
-    let url_match = format!("https://api.challonge.com/v1/tournaments/{}/matches.json?api_key={}", slug, token);
+    let url_match = format!("https://api.challonge.com/v1/tournaments/{}/matches.json?state=all&api_key={}", slug, token);
     
     let (p_res, m_res) = tokio::join!(
         client.get(&url_part).send(),
@@ -213,7 +215,9 @@ pub async fn get_all_matches_and_participants(slug: String) -> Result<serde_json
     if let Some(arr) = p_data.as_array() {
         for p in arr {
             if let Some(part) = p.get("participant") {
-                if let (Some(id), Some(name)) = (part.get("id").and_then(|v| v.as_i64()), part.get("name").and_then(|v| v.as_str())) {
+                let id_opt = part.get("id").and_then(|v| v.as_i64());
+                let name_opt = part.get("name").and_then(|v| v.as_str()).filter(|s| !s.trim().is_empty()).or_else(|| part.get("display_name").and_then(|v| v.as_str()));
+                if let (Some(id), Some(name)) = (id_opt, name_opt) {
                     let obj = serde_json::json!({ "id": id, "name": name });
                     participantes.insert(id, name.to_string());
                     part_list.push(obj);
@@ -232,6 +236,8 @@ pub async fn get_all_matches_and_participants(slug: String) -> Result<serde_json
                 let p1_name = participantes.get(&p1_id).cloned().unwrap_or_else(|| "TBD".to_string());
                 let p2_name = participantes.get(&p2_id).cloned().unwrap_or_else(|| "TBD".to_string());
                 
+                let state = mat.get("state").and_then(|v| v.as_str()).unwrap_or("");
+                
                 matches.push(serde_json::json!({
                     "id": mat.get("id"),
                     "player1_id": p1_id,
@@ -240,7 +246,8 @@ pub async fn get_all_matches_and_participants(slug: String) -> Result<serde_json
                     "player2_name": p2_name,
                     "round": mat.get("round"),
                     "scores_csv": mat.get("scores_csv").and_then(|v| v.as_str()).unwrap_or(""),
-                    "winner_id": mat.get("winner_id")
+                    "winner_id": mat.get("winner_id"),
+                    "state": state
                 }));
             }
         }
@@ -287,7 +294,7 @@ pub async fn get_group_matches(slug: String) -> Result<serde_json::Value, String
 
     let url_tournament = format!("https://api.challonge.com/v1/tournaments/{}.json?api_key={}", slug, token);
     let url_part = format!("https://api.challonge.com/v1/tournaments/{}/participants.json?api_key={}", slug, token);
-    let url_match = format!("https://api.challonge.com/v1/tournaments/{}/matches.json?api_key={}", slug, token);
+    let url_match = format!("https://api.challonge.com/v1/tournaments/{}/matches.json?state=all&api_key={}", slug, token);
     let url_full = format!("https://api.challonge.com/v1/tournaments/{}.json?include_participants=1&include_matches=1&api_key={}", slug, token);
 
     let (t_res, p_res, m_res, f_res) = tokio::join!(
@@ -395,7 +402,7 @@ pub async fn get_group_matches(slug: String) -> Result<serde_json::Value, String
                 let has_group_id = mat.get("group_id").is_some() && !mat["group_id"].is_null();
                 let state = mat.get("state").and_then(|v| v.as_str()).unwrap_or("");
                 
-                if has_group_id && state == "open" {
+                if has_group_id && state != "complete" {
                     let p1_id = mat.get("player1_id").and_then(|v| v.as_i64()).unwrap_or(0);
                     let p2_id = mat.get("player2_id").and_then(|v| v.as_i64()).unwrap_or(0);
                     

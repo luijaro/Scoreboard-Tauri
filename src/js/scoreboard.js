@@ -2352,7 +2352,7 @@ function syncChallongeTournament(changedId) {
   const val = changedEl.value;
   const selectedText = changedEl.options[changedEl.selectedIndex]?.textContent || '';
 
-  const ids = ['challongeTournamentSelector', 'tournamentList', 'tournamentBracket', 'tournamentTop8'];
+  const ids = ['challongeTournamentSelector', 'tournamentList', 'tournamentTop8'];
   let updatedAny = false;
 
   ids.forEach(id => {
@@ -2415,7 +2415,7 @@ async function cargarTodosLosTorneosChallonge() {
     return torneosOrdenados;
   } catch (error) {
     console.error("[Challonge] Error al cargar todos los torneos:", error);
-    const ids = ['challongeTournamentSelector', 'tournamentList', 'tournamentBracket', 'tournamentTop8'];
+    const ids = ['challongeTournamentSelector', 'tournamentList', 'tournamentTop8'];
     ids.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = `<option value="">❌ ${error.message}</option>`;
@@ -2423,9 +2423,9 @@ async function cargarTodosLosTorneosChallonge() {
   }
 }
 
-// Poblar los 4 selectores de torneos con la misma lista de torneos
+// Poblar los 3 selectores de torneos con la misma lista de torneos
 function actualizarListasDeTorneosChallonge(torneos) {
-  const ids = ['challongeTournamentSelector', 'tournamentList', 'tournamentBracket', 'tournamentTop8'];
+  const ids = ['challongeTournamentSelector', 'tournamentList', 'tournamentTop8'];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -2436,6 +2436,7 @@ function actualizarListasDeTorneosChallonge(torneos) {
     torneos.forEach(t => {
       const opt = document.createElement('option');
       opt.value = t.url;
+      opt.dataset.name = t.name;
       const estado = t.state ? ` (${t.state})` : '';
       opt.textContent = t.name + estado;
       el.appendChild(opt);
@@ -2529,7 +2530,7 @@ function actualizarSelectoresMatchesChallonge(matches, tipoMatches) {
   const matchesFiltrados = matches.filter(match =>
     match.player1_name && match.player2_name &&
     !match.player1_name.includes('TBD') && !match.player2_name.includes('TBD') &&
-    !match.winner_id
+    !match.winner_id && match.state !== "complete"
   );
 
   if (matchesFiltrados.length === 0) {

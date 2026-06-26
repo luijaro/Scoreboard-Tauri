@@ -248,8 +248,7 @@ Haz lo mismo para los otros métodos relacionados si no existen.
         <!-- Submenu de Challonge -->
         <nav class="sub-tabs">
           <button class="sub-tab-btn active" onclick="showChallongeSubTab(0)">Credenciales</button>
-          <button class="sub-tab-btn" onclick="showChallongeSubTab(1)">Bracket</button>
-          <button class="sub-tab-btn" onclick="showChallongeSubTab(2)">Top 8</button>
+          <button class="sub-tab-btn" onclick="showChallongeSubTab(1)">Top 8</button>
         </nav>
 
         <!-- Sub-tab 1: Credenciales -->
@@ -286,25 +285,7 @@ Haz lo mismo para los otros métodos relacionados si no existen.
           <!-- (Twitch bot moved to new tab) -->
         </div>
 
-        <!-- Sub-tab 2: Bracket -->
-        <div class="sub-tab-panel" id="challonge-bracket">
-          <div class="tab-content-center">
-            <div class="bracket-card-center">
-              <div style="display: flex; align-items: center; gap: 1em; margin-bottom:2em; ">
-                <select id="tournamentBracket" class="sb-select">
-                  <option value="">Selecciona un torneo...</option>
-                </select>
-                <button class="sb-btn" onclick="renderBracketVisual()">Mostrar Bracket Visual</button>
-              </div>
-              <div id="bracket-visual-container" class="bracket-visual-card"></div>
-            </div>
-            <div style="text-align:center; margin-top:20px;">
-              <button id="btnGuardarBracket" class="sb-btn btn-primary">Guardar Bracket</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sub-tab 3: Top 8 -->
+        <!-- Sub-tab 2: Top 8 -->
         <div class="sub-tab-panel" id="challonge-top8">
           <div class="top8-wrapper">
             <div class="top8-main-content">
@@ -747,6 +728,10 @@ Haz lo mismo para los otros métodos relacionados si no existen.
               title="Guardar bracket completo siguiendo esquema Start.gg">
               <i class="fa fa-sitemap"></i> Bracket
             </button>
+            <button class="widget-btn top8-btn" onclick="showTab(2); showChallongeSubTab(1); cargarTop8();"
+              title="Ir a la pestaña de Top 8 de Challonge">
+              <i class="fa fa-trophy"></i> Top 8
+            </button>
           </div>
         </div>
       </div>
@@ -928,6 +913,8 @@ Haz lo mismo para los otros métodos relacionados si no existen.
       }
 
       // === FUNCIONES TOP 8 CHALLONGE WIDGET ===
+
+
       async function mostrarTop8ChallongeDesdeWidget() {
         const tournamentSelector = document.getElementById('challongeTournamentSelector');
         const panel = document.getElementById('challongeTop8Panel');
@@ -1174,6 +1161,13 @@ Haz lo mismo para los otros métodos relacionados si no existen.
         }
 
         const tournamentSlug = tournamentSelector.value;
+        let tournamentName = tournamentSlug;
+        if (tournamentSelector.selectedIndex > -1) {
+          const selectedOpt = tournamentSelector.options[tournamentSelector.selectedIndex];
+          if (selectedOpt.dataset.name) {
+            tournamentName = selectedOpt.dataset.name;
+          }
+        }
 
         try {
           if (window.mostrarNotificacion) {
@@ -1197,7 +1191,7 @@ Haz lo mismo para los otros métodos relacionados si no existen.
 
           // Detecta el número de ronda más alto en winners
           const winnerRounds = res.matches.filter(m => m.round > 0).map(m => m.round);
-          const maxWinnerRound = Math.max(...winnerRounds);
+          const maxWinnerRound = winnerRounds.length > 0 ? Math.max(...winnerRounds) : 1;
           const rondas = {};
           res.matches.forEach(m => {
             const ronda = Number(m.round);
@@ -1256,7 +1250,7 @@ Haz lo mismo para los otros métodos relacionados si no existen.
 
           // Guardar bracket JSON con el esquema de Start.gg
           const bracketData = {
-            torneo: tournamentSlug,
+            torneo: tournamentName,
             fecha: new Date().toLocaleDateString(),
             matches: matchesAll,
             participantes: participantes

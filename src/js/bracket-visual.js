@@ -171,8 +171,9 @@ function buildBracketRound(ronda, matches, title, participantes) {
 }
 
 async function guardarBracketJSON(slug, matchesAll, participantes) {
+  const nombreTorneo = window.nombreTorneoActual || slug;
   const bracketData = {
-    torneo: slug,
+    torneo: nombreTorneo,
     fecha: new Date().toLocaleDateString(),
     matches: matchesAll,
     participantes: participantes
