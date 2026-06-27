@@ -480,8 +480,9 @@ async function consultarMatchesStartGG(eventIdInput, eventName) {
         const sinGanador = !set.winnerId && !set.winner_id;
         // Considerar en progreso solo si no hay ganador Y los scores son nulos, undefined o 0.
         const scoresEnCero = (s1 === null || s1 === undefined || s1 === 0) && (s2 === null || s2 === undefined || s2 === 0);
+        const estadoValido = set.state ? [2, 4, 6].includes(set.state) : scoresEnCero;
 
-        return tieneDosLuchadores && sinGanador && scoresEnCero;
+        return tieneDosLuchadores && sinGanador && estadoValido;
       });
       
       if (matchesEnProgreso.length === 0) {
@@ -489,9 +490,9 @@ async function consultarMatchesStartGG(eventIdInput, eventName) {
         return;
       }
       
-      // Extraer brackets únicos de todos los matches (no solo los en progreso)
+      // Extraer brackets únicos de los matches en progreso
       const bracketsMap = new Map();
-      res.sets.forEach(set => {
+      matchesEnProgreso.forEach(set => {
         const fase = set.fase || 'Sin fase';
         const round = set.fullRoundText || 'Sin ronda';
         
@@ -732,13 +733,17 @@ function mostrarMatchesDeBracket(eventId, eventName) {
   
   // Filtrar solo matches con dos luchadores y en progreso
   const matchesEnProgreso = setsDelBracket.filter(set => {
-    const p1 = set.slots[0]?.entrant?.name || 'TBD';
-    const p2 = set.slots[1]?.entrant?.name || 'TBD';
-    
-    const tieneDosLuchadores = p1 !== 'TBD' && p2 !== 'TBD';
-    const sinGanador = !set.winnerId && !set.winner_id;
-    
-    return tieneDosLuchadores && sinGanador;
+      const p1 = set.slots[0]?.entrant?.name || 'TBD';
+      const p2 = set.slots[1]?.entrant?.name || 'TBD';
+      
+      const tieneDosLuchadores = p1 !== 'TBD' && p2 !== 'TBD';
+      const sinGanador = !set.winnerId && !set.winner_id;
+      const s1 = set.slots[0]?.standing?.stats?.score?.value;
+      const s2 = set.slots[1]?.standing?.stats?.score?.value;
+      const scoresEnCero = (s1 === null || s1 === undefined || s1 === 0) && (s2 === null || s2 === undefined || s2 === 0);
+      const estadoValido = set.state ? [2, 4, 6].includes(set.state) : scoresEnCero;
+      
+      return tieneDosLuchadores && sinGanador && estadoValido;
   });
   
   const bracketMatchesDiv = document.getElementById('bracketMatches');

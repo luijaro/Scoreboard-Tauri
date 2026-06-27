@@ -61,11 +61,11 @@ pub async fn startgg_get_matches(event_id: i64) -> Result<serde_json::Value, Str
     let client = Client::new();
 
     // Consultamos los sets directamente a nivel del Evento para evitar múltiples llamadas en serie por cada fase
-    for page in 1..=5 { // max 5 páginas (hasta 500 matches) para cubrir casi cualquier torneo local/regional rápidamente
+    for page in 1..=10 { // max 10 páginas (hasta 500 matches) para cubrir casi cualquier torneo local/regional rápidamente
         let query_sets = format!(r#"
           query EventSets {{
             event(id: {}) {{
-              sets(perPage: 100, page: {}) {{
+              sets(perPage: 50, page: {}) {{
                 nodes {{
                   id
                   fullRoundText
@@ -92,6 +92,9 @@ pub async fn startgg_get_matches(event_id: i64) -> Result<serde_json::Value, Str
             .send().await.map_err(|e| e.to_string())?;
         
         let data: Value = res.json().await.map_err(|e| e.to_string())?;
+          
+        println!("Start.gg response: {}", serde_json::to_string_pretty(&data).unwrap_or_default());
+        
         let sets = data.pointer("/data/event/sets/nodes").and_then(|p| p.as_array()).cloned().unwrap_or_default();
         
         if sets.is_empty() { break; }
