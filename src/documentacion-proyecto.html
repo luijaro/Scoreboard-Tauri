@@ -505,6 +505,7 @@
         <a href="#comandos">9. Comandos útiles</a>
         <a href="#problemas">10. Problemas comunes</a>
         <a href="#mejoras">11. Mejoras a futuro</a>
+        <a href="#teams-2xko">12. Soporte Equipos/Dúos (2XKO)</a>
       </nav>
     </aside>
 
@@ -1013,6 +1014,52 @@ setInterval(updateOverlay, 2000);</code></pre>
           <li>Generar test cases y Jest units para lógica <code>utils.js</code> en transformaciones de string.</li>
           <li>Modificar el marcador desde la app (diseño visual del marcador en el HTML).</li>
         </ul>
+      </section>
+
+      <section id="teams-2xko">
+        <h2>12. Soporte para Equipos/Dúos (2XKO)</h2>
+        <p>
+          Se ha incorporado soporte nativo para juegos de formato tag team o dúos (específicamente diseñado para <strong>2XKO</strong>). Esto permite registrar hasta dos jugadores por cada lado (Jugador A y Jugador B), seleccionar sus dos personajes correspondientes y sincronizar esta estructura directamente desde la API de Start.gg.
+        </p>
+
+        <div class="grid">
+          <div class="card">
+            <h3>👥 Estructura de Participantes</h3>
+            <p>
+              El backend Rust consulta de forma extendida los <code>participants</code> individuales dentro de cada <code>entrant</code>. Si se detectan múltiples integrantes por equipo, la aplicación los distribuye en los campos correspondientes.
+            </p>
+          </div>
+          <div class="card">
+            <h3>⚙️ Lógica Scoreboard</h3>
+            <p>
+              El selector de juego al cambiar a <code>2XKO</code> activa de forma condicional campos secundarios en el formulario: inputs de nombres/sponsors (Tag B, Jugador B) y el segundo selector de personaje.
+            </p>
+          </div>
+          <div class="card">
+            <h3>🖥️ Overlays y Compatibilidad</h3>
+            <p>
+              Los overlays web unifican los nombres concatenándolos con una barra (<code>/</code>) si existe un segundo integrante, logrando compatibilidad retroactiva directa y sin romper el layout clásico.
+            </p>
+          </div>
+        </div>
+
+        <h3>Propiedades añadidas al JSON de salida (scoreboard.json)</h3>
+        <p>Al guardar el scoreboard en este modo, se escriben las siguientes claves adicionales:</p>
+        <div class="tree">
+{
+  "player1b": "Tag del compañero 1",
+  "tag1b": "Prefijo/Sponsor del compañero 1",
+  "char1b": "Segundo personaje del jugador 1",
+  "player2b": "Tag del compañero 2",
+  "tag2b": "Prefijo/Sponsor del compañero 2",
+  "char2b": "Segundo personaje del jugador 2"
+}
+        </div>
+
+        <h3>Búsqueda de Matches Terminados para Pruebas</h3>
+        <p>
+          Se añadió un control (checkbox) en el panel de Start.gg que permite desactivar la validación restrictiva de matches en progreso. Al estar seleccionado, habilita la importación y testeo de sets finalizados (esencial para probar brackets como el de la EVO 2026).
+        </p>
       </section>
 
       <footer>

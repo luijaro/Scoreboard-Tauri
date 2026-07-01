@@ -964,7 +964,10 @@ function getScoreboardData() {
     'SCON4': 'Super Naruto: Clash of Ninja 4',
     'SF3': 'Street Fighter III: 3rd Strike',
     'SF6': 'Street Fighter 6',
-    'T8': 'Tekken 8'
+    'T8': 'Tekken 8',
+    '2XKO': '2XKO',
+    'Tokon': 'Marvel Tōkon: Fighting Souls',
+    'MVC3': 'Ultimate Marvel vs. Capcom 3'
   };
 
   // Obtener nombre completo del juego
