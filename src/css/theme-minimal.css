@@ -190,7 +190,7 @@ body {
   gap: 24px;
   align-items: center;
   width: 100%;
-  height: 100%;
+  height: auto;
 }
 
 .sb-side {
@@ -656,13 +656,18 @@ select option {
 }
 
 /* Responsive */
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
   .scoreboard-main {
     grid-template-areas:
       "center center"
       "player1 player2"
       "info info";
     grid-template-columns: 1fr 1fr;
+  }
+  .sb-player-img {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 12px;
   }
 }
 
@@ -677,7 +682,7 @@ select option {
     gap: 16px;
   }
 
-  .sb-player-img { width: 100px; height: 100px; }
+  .sb-player-img { width: 90px; height: 90px; }
   .sb-score-row { font-size: 56px; gap: 16px; }
 
   .panel-section { padding: 20px 16px; }

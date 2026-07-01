@@ -11,12 +11,30 @@ $(function() {
     }
 
     function renderScoreboard(data) {
-        $('#name1').text(data.player1 || '');
-        $('#name2').text(data.player2 || '');
+        let p1Name = data.player1 || '';
+        if (data.player1b) {
+            p1Name += ' / ' + data.player1b;
+        }
+        let p2Name = data.player2 || '';
+        if (data.player2b) {
+            p2Name += ' / ' + data.player2b;
+        }
+        
+        let p1Tag = data.tag1 || '';
+        if (data.tag1b) {
+            p1Tag += ' / ' + data.tag1b;
+        }
+        let p2Tag = data.tag2 || '';
+        if (data.tag2b) {
+            p2Tag += ' / ' + data.tag2b;
+        }
+
+        $('#name1').text(p1Name);
+        $('#name2').text(p2Name);
         $('#score1').text(data.score1 ?? '');
         $('#score2').text(data.score2 ?? '');
-        $('#tag1').text(data.tag1 || '').toggle(!!data.tag1);
-        $('#tag2').text(data.tag2 || '').toggle(!!data.tag2);
+        $('#tag1').text(p1Tag).toggle(!!p1Tag);
+        $('#tag2').text(p2Tag).toggle(!!p2Tag);
 
         // Bandera: si tienes campo en JSON, úsalo; si no, usa getFlag()
         $('#flag1').attr('src', getFlag(data.country1)).toggle(!!data.country1);

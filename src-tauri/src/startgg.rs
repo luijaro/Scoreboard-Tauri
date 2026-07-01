@@ -70,7 +70,15 @@ pub async fn startgg_get_matches(event_id: i64) -> Result<serde_json::Value, Str
                   id
                   fullRoundText
                   slots {{
-                    entrant {{ name }}
+                    entrant {{
+                      id
+                      name
+                      participants {{
+                        id
+                        gamerTag
+                        prefix
+                      }}
+                    }}
                     standing {{ stats {{ score {{ value }} }} }}
                   }}
                   phaseGroup {{

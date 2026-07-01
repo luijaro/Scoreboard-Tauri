@@ -850,15 +850,25 @@ function updateVisual() {
   // Banderas removidas del UI; no actualizar
   // Actualizar personaje visual
   const p1Char = document.getElementById('p1CharSelect') ? document.getElementById('p1CharSelect').value : '';
+  const p1bChar = document.getElementById('p1bCharSelect') ? document.getElementById('p1bCharSelect').value : '';
   const p2Char = document.getElementById('p2CharSelect') ? document.getElementById('p2CharSelect').value : '';
+  const p2bChar = document.getElementById('p2bCharSelect') ? document.getElementById('p2bCharSelect').value : '';
   if (window.imgPersonajes) {
     const p1Img = imgPersonajes[p1Char];
+    const p1bImg = imgPersonajes[p1bChar];
     const p2Img = imgPersonajes[p2Char];
+    const p2bImg = imgPersonajes[p2bChar];
     if (document.getElementById('p1CharImg')) {
       document.getElementById('p1CharImg').src = p1Img ? (p1Img.startsWith('http') ? p1Img : window.__TAURI__.core.convertFileSrc(p1Img)) : '';
     }
+    if (document.getElementById('p1bCharImg')) {
+      document.getElementById('p1bCharImg').src = p1bImg ? (p1bImg.startsWith('http') ? p1bImg : window.__TAURI__.core.convertFileSrc(p1bImg)) : '';
+    }
     if (document.getElementById('p2CharImg')) {
       document.getElementById('p2CharImg').src = p2Img ? (p2Img.startsWith('http') ? p2Img : window.__TAURI__.core.convertFileSrc(p2Img)) : '';
+    }
+    if (document.getElementById('p2bCharImg')) {
+      document.getElementById('p2bCharImg').src = p2bImg ? (p2bImg.startsWith('http') ? p2bImg : window.__TAURI__.core.convertFileSrc(p2bImg)) : '';
     }
   }
 }
@@ -875,10 +885,17 @@ function swap() {
   let p2Name = document.getElementById('p2NameInput').value;
   let p1Tag = document.getElementById('p1TagInput').value;
   let p2Tag = document.getElementById('p2TagInput').value;
+  let p1bName = document.getElementById('p1bNameInput') ? document.getElementById('p1bNameInput').value : '';
+  let p2bName = document.getElementById('p2bNameInput') ? document.getElementById('p2bNameInput').value : '';
+  let p1bTag = document.getElementById('p1bTagInput') ? document.getElementById('p1bTagInput').value : '';
+  let p2bTag = document.getElementById('p2bTagInput') ? document.getElementById('p2bTagInput').value : '';
+  
   let p1Score = document.getElementById('p1Score').textContent;
   let p2Score = document.getElementById('p2Score').textContent;
   let p1Char = document.getElementById('p1CharSelect') ? document.getElementById('p1CharSelect').value : '';
   let p2Char = document.getElementById('p2CharSelect') ? document.getElementById('p2CharSelect').value : '';
+  let p1bChar = document.getElementById('p1bCharSelect') ? document.getElementById('p1bCharSelect').value : '';
+  let p2bChar = document.getElementById('p2bCharSelect') ? document.getElementById('p2bCharSelect').value : '';
 
   // Capturar lunas actuales
   let p1Moon = document.getElementById('p1MoonSelect') ? document.getElementById('p1MoonSelect').value : '';
@@ -889,6 +906,16 @@ function swap() {
   document.getElementById('p2NameInput').value = p1Name;
   document.getElementById('p1TagInput').value = p2Tag;
   document.getElementById('p2TagInput').value = p1Tag;
+  
+  if (document.getElementById('p1bNameInput') && document.getElementById('p2bNameInput')) {
+    document.getElementById('p1bNameInput').value = p2bName;
+    document.getElementById('p2bNameInput').value = p1bName;
+  }
+  if (document.getElementById('p1bTagInput') && document.getElementById('p2bTagInput')) {
+    document.getElementById('p1bTagInput').value = p2bTag;
+    document.getElementById('p2bTagInput').value = p1bTag;
+  }
+  
   document.getElementById('p1Score').textContent = p2Score;
   document.getElementById('p2Score').textContent = p1Score;
 
@@ -896,6 +923,10 @@ function swap() {
   if (document.getElementById('p1CharSelect') && document.getElementById('p2CharSelect')) {
     document.getElementById('p1CharSelect').value = p2Char;
     document.getElementById('p2CharSelect').value = p1Char;
+  }
+  if (document.getElementById('p1bCharSelect') && document.getElementById('p2bCharSelect')) {
+    document.getElementById('p1bCharSelect').value = p2bChar;
+    document.getElementById('p2bCharSelect').value = p1bChar;
   }
 
   // Intercambiar lunas si existen
@@ -954,6 +985,12 @@ function getScoreboardData() {
     score2: Number(document.getElementById('p2Score').textContent),
     tag1: document.getElementById('p1TagInput').value,
     tag2: document.getElementById('p2TagInput').value,
+    player1b: document.getElementById('p1bNameInput')?.value || '',
+    tag1b: document.getElementById('p1bTagInput')?.value || '',
+    char1b: document.getElementById('p1bCharSelect')?.value || '',
+    player2b: document.getElementById('p2bNameInput')?.value || '',
+    tag2b: document.getElementById('p2bTagInput')?.value || '',
+    char2b: document.getElementById('p2bCharSelect')?.value || '',
     char1: document.getElementById('p1CharSelect')?.value || '',
     char2: document.getElementById('p2CharSelect')?.value || '',
     moon1: game === 'MBAACC' ? (document.getElementById('p1MoonSelect')?.value || '') : '',
@@ -1015,11 +1052,32 @@ let listaPersonajes = [];
 let imgPersonajes = {};
 window.imgPersonajes = imgPersonajes;
 
+function toggle2xkoInputs() {
+  const game = document.getElementById('gameSel').value;
+  const show = (game === '2XKO');
+  
+  const p1Teammate = document.getElementById('p1TeammateContainer');
+  const p2Teammate = document.getElementById('p2TeammateContainer');
+  const p1bChar = document.getElementById('p1bCharSelect');
+  const p2bChar = document.getElementById('p2bCharSelect');
+  const p1bImg = document.getElementById('p1bCharImg');
+  const p2bImg = document.getElementById('p2bCharImg');
+  
+  if (p1Teammate) p1Teammate.style.display = show ? 'block' : 'none';
+  if (p2Teammate) p2Teammate.style.display = show ? 'block' : 'none';
+  if (p1bChar) p1bChar.style.display = show ? 'block' : 'none';
+  if (p2bChar) p2bChar.style.display = show ? 'block' : 'none';
+  if (p1bImg) p1bImg.style.display = show ? 'block' : 'none';
+  if (p2bImg) p2bImg.style.display = show ? 'block' : 'none';
+}
+
 async function cambiarJuego() {
   const juegoFolder = document.getElementById('gameSel').value;
   const selectedChars = {
     p1Char: document.getElementById('p1CharSelect') ? document.getElementById('p1CharSelect').value : '',
     p2Char: document.getElementById('p2CharSelect') ? document.getElementById('p2CharSelect').value : '',
+    p1bChar: document.getElementById('p1bCharSelect') ? document.getElementById('p1bCharSelect').value : '',
+    p2bChar: document.getElementById('p2bCharSelect') ? document.getElementById('p2bCharSelect').value : '',
   };
   const selectedTop8Chars = [];
   for (let i = 0; i < 8; ++i) {
@@ -1033,6 +1091,9 @@ async function cambiarJuego() {
   if (typeof toggleMoonSelectors === 'function') {
     toggleMoonSelectors();
   }
+  
+  // Mostrar/ocultar inputs para 2XKO
+  toggle2xkoInputs();
 
   const res = await window.__TAURI__.core.invoke('get-personajes', { juegoFolder });
 
@@ -1042,7 +1103,9 @@ async function cambiarJuego() {
     window.imgPersonajes = imgPersonajes;
     res.personajes.forEach(p => { imgPersonajes[p.nombre] = window.__TAURI__.core.convertFileSrc(p.imagen); });
     llenarSelectPersonajes('p1CharSelect');
+    llenarSelectPersonajes('p1bCharSelect');
     llenarSelectPersonajes('p2CharSelect');
+    llenarSelectPersonajes('p2bCharSelect');
     for (let i = 0; i < 8; ++i) llenarSelectPersonajes('top8char' + i);
     
     const p1Select = document.getElementById('p1CharSelect');
@@ -1053,12 +1116,28 @@ async function cambiarJuego() {
         p1Select.value = listaPersonajes[0] || '';
       }
     }
+    const p1bSelect = document.getElementById('p1bCharSelect');
+    if (p1bSelect) {
+      if (selectedChars.p1bChar && listaPersonajes.includes(selectedChars.p1bChar)) {
+        p1bSelect.value = selectedChars.p1bChar;
+      } else {
+        p1bSelect.value = listaPersonajes[1] || listaPersonajes[0] || '';
+      }
+    }
     const p2Select = document.getElementById('p2CharSelect');
     if (p2Select) {
       if (selectedChars.p2Char && listaPersonajes.includes(selectedChars.p2Char)) {
         p2Select.value = selectedChars.p2Char;
       } else {
         p2Select.value = listaPersonajes[0] || '';
+      }
+    }
+    const p2bSelect = document.getElementById('p2bCharSelect');
+    if (p2bSelect) {
+      if (selectedChars.p2bChar && listaPersonajes.includes(selectedChars.p2bChar)) {
+        p2bSelect.value = selectedChars.p2bChar;
+      } else {
+        p2bSelect.value = listaPersonajes[1] || listaPersonajes[0] || '';
       }
     }
 
@@ -1072,16 +1151,26 @@ async function cambiarJuego() {
     imgPersonajes = {};
     window.imgPersonajes = imgPersonajes;
     llenarSelectPersonajes('p1CharSelect');
+    llenarSelectPersonajes('p1bCharSelect');
     llenarSelectPersonajes('p2CharSelect');
+    llenarSelectPersonajes('p2bCharSelect');
     for (let i = 0; i < 8; ++i) llenarSelectPersonajes('top8char' + i);
     
     const p1Select = document.getElementById('p1CharSelect');
     if (p1Select) {
       p1Select.value = '';
     }
+    const p1bSelect = document.getElementById('p1bCharSelect');
+    if (p1bSelect) {
+      p1bSelect.value = '';
+    }
     const p2Select = document.getElementById('p2CharSelect');
     if (p2Select) {
       p2Select.value = '';
+    }
+    const p2bSelect = document.getElementById('p2bCharSelect');
+    if (p2bSelect) {
+      p2bSelect.value = '';
     }
 
     for (let i = 0; i < 8; ++i) {

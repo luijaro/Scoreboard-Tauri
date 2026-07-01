@@ -861,7 +861,6 @@ body {
   gap: 20px; /* Reducido de 24px */
   align-items: center;
   min-height: 300px; /* Altura mínima más flexible */
-  max-height: 60vh; /* Altura máxima relativa al viewport */
   width: 100%; /* Asegura que use todo el ancho disponible */
   border: 1px solid var(--border-color);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);

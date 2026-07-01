@@ -27,7 +27,8 @@
 </head>
 
 <body>
-  <div class="main-flex-app" style="display: flex; flex-direction: row; align-items: stretch; height: 100vh; overflow: hidden;">
+  <div class="main-flex-app"
+    style="display: flex; flex-direction: row; align-items: stretch; height: 100vh; overflow: hidden;">
     <div class="app-container" style="margin-right: 0;">
       <!--
 NOTA: El error "No handler registered for 'set-obs-scene'" indica que falta implementar el handler 'set-obs-scene' en tu backend (main.js o proceso principal de Electron).
@@ -50,20 +51,23 @@ Haz lo mismo para los otros métodos relacionados si no existen.
           <i class="fa fa-microphone"></i><span class="tab-label">Comentaristas</span>
         </button>
         <button class="tab-btn" id="tabBtnChallonge" onclick="showTab(2)" title="Challonge">
-          <img src="img/cha.png" alt="Challonge" class="tab-icon" style="height:1.1em;" /><span class="tab-label">Challonge</span>
+          <img src="img/cha.png" alt="Challonge" class="tab-icon" style="height:1.1em;" /><span
+            class="tab-label">Challonge</span>
         </button>
         <button class="tab-btn" id="tabBtnTwitch" onclick="showTab(3)" title="Twitch">
           <img src="img/twitch.png" alt="Twitch" class="tab-icon" /><span class="tab-label">Twitch</span>
         </button>
         <button class="tab-btn" id="tabBtnStartgg" onclick="showTab(4)" title="Start.gg">
-          <img src="https://developer.start.gg/img/new_logo-white.svg" alt="Start.gg" class="tab-icon" /><span class="tab-label">Start.gg</span>
+          <img src="https://developer.start.gg/img/new_logo-white.svg" alt="Start.gg" class="tab-icon" /><span
+            class="tab-label">Start.gg</span>
         </button>
         <div class="tab-actions-group">
           <div class="tab-divider"></div>
           <button class="tab-btn tab-btn-icon" id="tabBtnTheme" title="Cambiar tema" onclick="cycleTheme()">
             <i class="fa fa-circle-half-stroke"></i>
           </button>
-          <button class="tab-btn tab-btn-icon rutas-tab" id="tabBtnConfigure" onclick="showTab(5)" title="Configurar rutas">
+          <button class="tab-btn tab-btn-icon rutas-tab" id="tabBtnConfigure" onclick="showTab(5)"
+            title="Configurar rutas">
             <i class="fa fa-gear"></i>
           </button>
         </div>
@@ -76,13 +80,26 @@ Haz lo mismo para los otros métodos relacionados si no existen.
           <!-- Jugador 1 integrado -->
           <div class="sb-side">
             <div class="sb-player-card-header"></div>
-            <img class="sb-player-img" id="p1CharImg"
-              src="https://static.wikia.nocookie.net/streetfighter/images/2/29/JuriSF6render.png" alt="Juri" />
+            <div style="display:flex; justify-content:center; gap: 8px;">
+              <img class="sb-player-img" id="p1CharImg"
+                src="https://static.wikia.nocookie.net/streetfighter/images/2/29/JuriSF6render.png" alt="Juri" />
+              <img class="sb-player-img" id="p1bCharImg" style="display:none;" src="" alt="" />
+            </div>
             <div class="sb-side-content">
               <div style="position:relative; display:flex; flex-direction:column; align-items:center;">
 
                 <input class="sb-input sb-player-name sb-overlay-input-strong" id="p1NameInput" value="Jugador 1" />
-                <input class="sb-input sb-player-tag sb-overlay-input-light" id="p1TagInput" value="" placeholder="Team" />
+                <input class="sb-input sb-player-tag sb-overlay-input-light" id="p1TagInput" value=""
+                  placeholder="Team" />
+
+                <!-- Contenedor Teammate 1 (2XKO) -->
+                <div id="p1TeammateContainer" style="display:none; width: 100%; margin-top: 5px;">
+                  <input class="sb-input sb-player-name sb-overlay-input-strong" id="p1bNameInput" value=""
+                    placeholder="Jugador 1B" />
+                  <input class="sb-input sb-player-tag sb-overlay-input-light" id="p1bTagInput" value=""
+                    placeholder="Team 1B" />
+                </div>
+
                 <select class="sb-dropdown sb-flag-select" id="p1FlagSelect">
                   <option value="cl" selected>Chile</option>
                   <option value="ar">Argentina</option>
@@ -93,6 +110,11 @@ Haz lo mismo para los otros métodos relacionados si no existen.
                   <!-- ... -->
                 </select>
                 <select class="sb-dropdown" id="p1CharSelect">
+                  <!-- Personajes se llenan dinámicamente -->
+                </select>
+
+                <!-- Segundo Personaje 1 (2XKO) -->
+                <select class="sb-dropdown" id="p1bCharSelect" style="display:none; margin-top: 5px;">
                   <!-- Personajes se llenan dinámicamente -->
                 </select>
                 <select class="sb-dropdown moon-select" id="p1MoonSelect" style="display:none;">
@@ -144,6 +166,7 @@ Haz lo mismo para los otros métodos relacionados si no existen.
                 <option value="SF3">Street Fighter III: 3rd Strike</option>
                 <option value="SF6">Street Fighter 6</option>
                 <option value="T8">Tekken 8</option>
+                <option value="2XKO">2XKO</option>
               </select>
               <script>
                 // Mostrar/ocultar selectores de Moon según el juego
@@ -168,12 +191,25 @@ Haz lo mismo para los otros métodos relacionados si no existen.
           <!-- Jugador 2 integrado -->
           <div class="sb-side right">
             <div class="sb-player-card-header"></div>
-            <img class="sb-player-img" id="p2CharImg"
-              src="https://static.wikia.nocookie.net/streetfighter/images/1/1e/KenSF6render.png" alt="Ken" />
+            <div style="display:flex; justify-content:center; gap: 8px;">
+              <img class="sb-player-img" id="p2CharImg"
+                src="https://static.wikia.nocookie.net/streetfighter/images/1/1e/KenSF6render.png" alt="Ken" />
+              <img class="sb-player-img" id="p2bCharImg" style="display:none;" src="" alt="" />
+            </div>
             <div class="sb-side-content">
               <div style="position:relative; display:flex; flex-direction:column; align-items:center;">
                 <input class="sb-input sb-player-name sb-overlay-input-strong" id="p2NameInput" value="Jugador 2" />
-                <input class="sb-input sb-player-tag sb-overlay-input-light" id="p2TagInput" value="" placeholder="Team" />
+                <input class="sb-input sb-player-tag sb-overlay-input-light" id="p2TagInput" value=""
+                  placeholder="Team" />
+
+                <!-- Contenedor Teammate 2 (2XKO) -->
+                <div id="p2TeammateContainer" style="display:none; width: 100%; margin-top: 5px;">
+                  <input class="sb-input sb-player-name sb-overlay-input-strong" id="p2bNameInput" value=""
+                    placeholder="Jugador 2B" />
+                  <input class="sb-input sb-player-tag sb-overlay-input-light" id="p2bTagInput" value=""
+                    placeholder="Team 2B" />
+                </div>
+
                 <select class="sb-dropdown sb-flag-select" id="p2FlagSelect">
                   <option value="cl" selected>Chile</option>
                   <option value="ar">Argentina</option>
@@ -184,6 +220,11 @@ Haz lo mismo para los otros métodos relacionados si no existen.
                   <!-- ... -->
                 </select>
                 <select class="sb-dropdown" id="p2CharSelect">
+                  <!-- Personajes se llenan dinámicamente -->
+                </select>
+
+                <!-- Segundo Personaje 2 (2XKO) -->
+                <select class="sb-dropdown" id="p2bCharSelect" style="display:none; margin-top: 5px;">
                   <!-- Personajes se llenan dinámicamente -->
                 </select>
                 <select class="sb-dropdown moon-select" id="p2MoonSelect" style="display:none;">
@@ -347,7 +388,8 @@ Haz lo mismo para los otros métodos relacionados si no existen.
             <button class="sb-btn stream-load-btn" onclick="cargarStreamTwitch()">
               <i class="fa fa-play"></i> Ver Stream
             </button>
-            <button class="sb-btn stream-chat-toggle-btn" id="streamChatToggleBtn" onclick="toggleTwitchChat()" title="Mostrar/ocultar chat">
+            <button class="sb-btn stream-chat-toggle-btn" id="streamChatToggleBtn" onclick="toggleTwitchChat()"
+              title="Mostrar/ocultar chat">
               <i class="fa fa-comments"></i>
             </button>
           </div>
@@ -357,7 +399,8 @@ Haz lo mismo para los otros métodos relacionados si no existen.
               <p>Ingresa un canal y presiona <strong>Ver Stream</strong></p>
             </div>
             <div class="stream-webview-wrap" id="streamWebviewWrap" style="display:none;">
-              <iframe id="twitchStreamWebview" class="stream-webview" allow="autoplay; encrypted-media; fullscreen" allowfullscreen frameborder="0"></iframe>
+              <iframe id="twitchStreamWebview" class="stream-webview" allow="autoplay; encrypted-media; fullscreen"
+                allowfullscreen frameborder="0"></iframe>
               <iframe id="twitchChatWebview" class="stream-chat-webview" frameborder="0"></iframe>
             </div>
           </div>
@@ -388,7 +431,8 @@ Haz lo mismo para los otros métodos relacionados si no existen.
               <div class="form-row"
                 style="flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:10px; margin-top:10px;">
                 <input id="nbClientId" placeholder="Client ID" class="sb-input">
-                <input id="nbRedirectUri" placeholder="Redirect URI" value="http://localhost:3001/nightbot-callback" class="sb-input">
+                <input id="nbRedirectUri" placeholder="Redirect URI" value="http://localhost:3001/nightbot-callback"
+                  class="sb-input">
                 <button class="sb-btn" onclick="generarNightbotAuthUrl()">Generar URL de autorización</button>
               </div>
               <div id="nbAuthUrl" style="margin:8px 0 8px 0;word-break:break-all;"></div>
@@ -431,14 +475,19 @@ Haz lo mismo para los otros métodos relacionados si no existen.
                 style="height:1.3em;vertical-align:middle; margin-right:0.5em;" />Conectar bot a Twitch</h2>
             <details style="margin-bottom:15px;">
               <summary style="cursor:pointer;font-weight:500;">Generar Token OAuth de Twitch</summary>
-              <div class="form-row" style="flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:10px; margin-top:10px;">
-                <input id="twClientId" placeholder="Twitch Client ID (Opcional)" class="sb-input" style="flex:1; min-width:200px;">
-                <input id="twRedirectUri" placeholder="Redirect URI" value="http://localhost:3001/twitch-callback" class="sb-input" style="flex:1; min-width:200px;">
+              <div class="form-row"
+                style="flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:10px; margin-top:10px;">
+                <input id="twClientId" placeholder="Twitch Client ID (Opcional)" class="sb-input"
+                  style="flex:1; min-width:200px;">
+                <input id="twRedirectUri" placeholder="Redirect URI" value="http://localhost:3001/twitch-callback"
+                  class="sb-input" style="flex:1; min-width:200px;">
                 <button class="sb-btn btn-success" onclick="generarTwitchAuthUrl()">Obtener Token</button>
               </div>
               <div class="form-row text-muted" style="font-size:0.95em; margin:0;">
-                Requiere registrar una app en <a href="https://dev.twitch.tv/console" target="_blank">dev.twitch.tv</a> con esa URL de Redirección.<br>
-                Alternativamente, puedes usar el generador externo clásico si no deseas crear una app: <a href="https://twitchapps.com/tmi/" target="_blank">twitchapps.com/tmi/</a>
+                Requiere registrar una app en <a href="https://dev.twitch.tv/console" target="_blank">dev.twitch.tv</a>
+                con esa URL de Redirección.<br>
+                Alternativamente, puedes usar el generador externo clásico si no deseas crear una app: <a
+                  href="https://twitchapps.com/tmi/" target="_blank">twitchapps.com/tmi/</a>
               </div>
             </details>
             <div class="form-row">
@@ -465,11 +514,16 @@ Haz lo mismo para los otros métodos relacionados si no existen.
             <label for="startggSlug" class="text-muted" style="margin-right:1em; font-size:1.08em;">Slug o
               búsqueda:</label>
             <input id="startggSlug" class="sb-input"
-              placeholder="Ej: tournament/mi-torneo/event/singles o palabras clave"
-              style="font-size:1.08em;">
+              placeholder="Ej: tournament/mi-torneo/event/singles o palabras clave" style="font-size:1.08em;">
             <button class="sb-btn btn-secondary"
               style="font-weight:bold; font-size:1.08em; border-radius:7px; padding:0.5em 1.5em;"
               onclick="buscarStartGG()"><i class="fa fa-search"></i> Buscar</button>
+            <label
+              style="display: flex; align-items: center; gap: 0.5em; font-size: 1.08em; cursor: pointer; user-select: none;"
+              class="text-muted">
+              <input type="checkbox" id="startggShowCompleted" style="width: 1.1em; height: 1.1em;" />
+              Mostrar matches terminados
+            </label>
           </div>
           <div class="form-row" style="margin-bottom:1.2em; gap:1em; flex-wrap:wrap; align-items:center;">
             <label for="startggToken" class="text-muted" style="margin-right:1em; font-size:1.08em;">Token
@@ -506,15 +560,18 @@ Haz lo mismo para los otros métodos relacionados si no existen.
             Puedes dejar una ruta vacía para usar la ubicación por defecto.
           </div>
 
-          <div style="text-align: center; margin-bottom: 2em; padding-bottom: 1.5em; border-bottom: 1px solid var(--border-color);">
-            <button class="sb-btn btn-success" id="btnWorkspaceMain" style="font-size: 1.1em; padding: 0.6em 1.5em; box-shadow: 0 4px 6px rgba(0,0,0,0.2);" onclick="elegirDirectorioWorkspace(this)">
+          <div
+            style="text-align: center; margin-bottom: 2em; padding-bottom: 1.5em; border-bottom: 1px solid var(--border-color);">
+            <button class="sb-btn btn-success" id="btnWorkspaceMain"
+              style="font-size: 1.1em; padding: 0.6em 1.5em; box-shadow: 0 4px 6px rgba(0,0,0,0.2);"
+              onclick="elegirDirectorioWorkspace(this)">
               Elegir Carpeta de Proyecto
             </button>
             <div style="margin-top: 0.8em; font-size: 0.9em;" class="text-muted">
               Selecciona una carpeta para configurar/crear todos los archivos automáticamente.
             </div>
           </div>
-          
+
           <div class="form-row" style="margin-bottom:1.2em; align-items:center;">
             <label for="rutaScoreboard" style="min-width:160px;">Scoreboard JSON:</label>
             <input id="rutaScoreboard" class="sb-input" readonly>
@@ -586,7 +643,7 @@ Haz lo mismo para los otros métodos relacionados si no existen.
           btn.disabled = false;
           btn.textContent = 'Elegir Carpeta de Proyecto';
         }
-        
+
         if (res.ok && res.rutas) {
           function rutaId(tipo) {
             if (tipo === 'apikey') return 'rutaApiKey';
@@ -613,7 +670,8 @@ Haz lo mismo para los otros métodos relacionados si no existen.
 
     <!-- Widget flotante con tabs para Start.gg y Challonge (único, sin duplicados) -->
     <!-- Botón de colapso (visible cuando el widget está oculto) -->
-    <button id="widgetCollapseTab" class="widget-collapse-tab" onclick="toggleTournamentWidget()" title="Mostrar panel de torneos" style="display:none;">
+    <button id="widgetCollapseTab" class="widget-collapse-tab" onclick="toggleTournamentWidget()"
+      title="Mostrar panel de torneos" style="display:none;">
       <i class="fa fa-chevron-left"></i>
       <span class="widget-collapse-label">Torneos</span>
     </button>
@@ -810,17 +868,17 @@ Haz lo mismo para los otros métodos relacionados si no existen.
         const isVisible = widget.style.display !== 'none';
         widget.style.display = isVisible ? 'none' : 'block';
         collapseTab.style.display = isVisible ? 'flex' : 'none';
-        try { localStorage.setItem('widget-collapsed', isVisible ? '1' : '0'); } catch(_) {}
+        try { localStorage.setItem('widget-collapsed', isVisible ? '1' : '0'); } catch (_) { }
       }
 
       // Restaurar estado al cargar
-      window.addEventListener('DOMContentLoaded', function() {
+      window.addEventListener('DOMContentLoaded', function () {
         try {
           if (localStorage.getItem('widget-collapsed') === '1') {
             document.getElementById('tournamentFloatingWidget').style.display = 'none';
             document.getElementById('widgetCollapseTab').style.display = 'flex';
           }
-        } catch(_) {}
+        } catch (_) { }
       });
       // === CHALLONGE WIDGET ===
       async function buscarChallongeDesdeWidget() {
@@ -841,7 +899,7 @@ Haz lo mismo para los otros métodos relacionados si no existen.
                 // Si encontramos el torneo por slug, agregarlo directamente
                 const nuevoTorneo = { url: query, name: slugRes.tournament_name, state: 'encontrado por slug' };
                 actualizarListasDeTorneosChallonge([nuevoTorneo]);
-                
+
                 const ids = ['challongeTournamentSelector', 'tournamentList', 'tournamentBracket', 'tournamentTop8'];
                 ids.forEach(id => {
                   const el = document.getElementById(id);
@@ -1554,38 +1612,38 @@ Haz lo mismo para los otros métodos relacionados si no existen.
       if (!channel) return;
 
       const streamWv = document.getElementById('twitchStreamWebview');
-      const chatWv   = document.getElementById('twitchChatWebview');
-      const wrap     = document.getElementById('streamWebviewWrap');
+      const chatWv = document.getElementById('twitchChatWebview');
+      const wrap = document.getElementById('streamWebviewWrap');
       const placeholder = document.getElementById('streamPlaceholder');
 
       const parentHost = window.location.hostname || "localhost";
       streamWv.src = `https://player.twitch.tv/?channel=${encodeURIComponent(channel)}&parent=${parentHost}&muted=false`;
-      chatWv.src   = `https://www.twitch.tv/embed/${encodeURIComponent(channel)}/chat?parent=${parentHost}&darkpopout`;
+      chatWv.src = `https://www.twitch.tv/embed/${encodeURIComponent(channel)}/chat?parent=${parentHost}&darkpopout`;
 
       wrap.style.display = 'flex';
       placeholder.style.display = 'none';
 
       // Guardar canal en localStorage
-      try { localStorage.setItem('twitch-stream-channel', channel); } catch(_) {}
+      try { localStorage.setItem('twitch-stream-channel', channel); } catch (_) { }
     }
 
     function toggleTwitchChat() {
       twitchChatVisible = !twitchChatVisible;
       const chatWv = document.getElementById('twitchChatWebview');
-      const btn    = document.getElementById('streamChatToggleBtn');
+      const btn = document.getElementById('streamChatToggleBtn');
       chatWv.style.display = twitchChatVisible ? '' : 'none';
       btn.classList.toggle('active', twitchChatVisible);
     }
 
     // Restaurar canal guardado al abrir la tab
-    window.addEventListener('DOMContentLoaded', function() {
+    window.addEventListener('DOMContentLoaded', function () {
       try {
         const saved = localStorage.getItem('twitch-stream-channel');
         if (saved) document.getElementById('twitchStreamChannel').value = saved;
-      } catch(_) {}
+      } catch (_) { }
 
       // Enter para cargar stream
-      document.getElementById('twitchStreamChannel').addEventListener('keydown', function(e) {
+      document.getElementById('twitchStreamChannel').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') cargarStreamTwitch();
       });
     });
@@ -1641,7 +1699,9 @@ Haz lo mismo para los otros métodos relacionados si no existen.
   <!-- Footer de versión y actualizaciones manuales -->
   <div id="versionFooter">
     <span id="txtAppVersion">v2.0.3</span>
-    <button class="sb-btn" id="btnManualUpdate" style="padding: 4px 10px; font-size: 0.85em; border-radius: 12px; background: var(--secondary-color); color: white; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;" onclick="buscarActualizacionManual()">
+    <button class="sb-btn" id="btnManualUpdate"
+      style="padding: 4px 10px; font-size: 0.85em; border-radius: 12px; background: var(--secondary-color); color: white; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;"
+      onclick="buscarActualizacionManual()">
       <i class="fa fa-rotate"></i> Buscar actualización
     </button>
   </div>

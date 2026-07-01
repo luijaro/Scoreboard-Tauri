@@ -470,13 +470,17 @@ async function consultarMatchesStartGG(eventIdInput, eventName) {
     }
     if (res.ok && res.sets && res.sets.length > 0) {
       // Primero filtrar todos los matches en progreso con dos luchadores
+      const showCompleted = document.getElementById('startggShowCompleted')?.checked;
       const matchesEnProgreso = res.sets.filter(set => {
         const p1 = set.slots[0]?.entrant?.name || 'TBD';
         const p2 = set.slots[1]?.entrant?.name || 'TBD';
+        const tieneDosLuchadores = p1 !== 'TBD' && p2 !== 'TBD';
+        if (showCompleted) {
+          return tieneDosLuchadores;
+        }
         const s1 = set.slots[0]?.standing?.stats?.score?.value;
         const s2 = set.slots[1]?.standing?.stats?.score?.value;
 
-        const tieneDosLuchadores = p1 !== 'TBD' && p2 !== 'TBD';
         const sinGanador = !set.winnerId && !set.winner_id;
         // Considerar en progreso solo si no hay ganador Y los scores son nulos, undefined o 0.
         const scoresEnCero = (s1 === null || s1 === undefined || s1 === 0) && (s2 === null || s2 === undefined || s2 === 0);
@@ -672,6 +676,10 @@ function filtrarMatchesGlobal() {
     resultsDiv.innerHTML = `<div style='color:#e67e22; font-size:0.95em; margin-bottom:0.7em;'>No se encontraron matches con ese nick.</div>`;
     return;
   }
+  
+  // Guardar en variable global para carga por índice
+  window.filteredSearchMatches = filtered;
+
   let html = `<div style='color:#ffe8b2; font-size:1em; margin-bottom:0.5em; font-weight:bold;'>🥊 Matches encontrados (${filtered.length}):</div>`;
   html += `<div style='display:grid; grid-template-columns:repeat(3, 1fr); gap:0.8em;'>`;
   filtered.forEach((set, index) => {
@@ -698,7 +706,7 @@ function filtrarMatchesGlobal() {
         font-size:0.85em; font-family:Montserrat,sans-serif; font-weight:500;
         transition:background .18s,box-shadow .18s; cursor:pointer; text-align:center;
       '
-      onclick="enviarMatchAlScoreboard('${escapeQuotes(p1)}','${escapeQuotes(p2)}','${s1}','${s2}','${escapeQuotes(roundDisplay)}','${escapeQuotes(faseOriginal)}')"
+      onclick="enviarMatchAlScoreboardPorIndice(${index}, 'search')"
       onmouseover="this.style.background='#2a2b42'" 
       onmouseout="this.style.background='#23243a'"
       title="Enviar al scoreboard">
@@ -732,11 +740,15 @@ function mostrarMatchesDeBracket(eventId, eventName) {
   });
   
   // Filtrar solo matches con dos luchadores y en progreso
+  const showCompleted = document.getElementById('startggShowCompleted')?.checked;
   const matchesEnProgreso = setsDelBracket.filter(set => {
       const p1 = set.slots[0]?.entrant?.name || 'TBD';
       const p2 = set.slots[1]?.entrant?.name || 'TBD';
       
       const tieneDosLuchadores = p1 !== 'TBD' && p2 !== 'TBD';
+      if (showCompleted) {
+        return tieneDosLuchadores;
+      }
       const sinGanador = !set.winnerId && !set.winner_id;
       const s1 = set.slots[0]?.standing?.stats?.score?.value;
       const s2 = set.slots[1]?.standing?.stats?.score?.value;
@@ -746,6 +758,9 @@ function mostrarMatchesDeBracket(eventId, eventName) {
       return tieneDosLuchadores && sinGanador && estadoValido;
   });
   
+  // Guardar en variable global para carga por índice
+  window.displayedBracketMatches = matchesEnProgreso;
+
   const bracketMatchesDiv = document.getElementById('bracketMatches');
   
   if (matchesEnProgreso.length === 0) {
@@ -802,7 +817,7 @@ function mostrarMatchesDeBracket(eventId, eventName) {
         font-size:0.85em; font-family:Montserrat,sans-serif; font-weight:500;
         transition:background .18s,box-shadow .18s; cursor:pointer; text-align:center;
       '
-      onclick="enviarMatchAlScoreboard('${escapeQuotes(p1)}','${escapeQuotes(p2)}','${s1}','${s2}','${escapeQuotes(roundDisplay)}','${escapeQuotes(faseOriginal)}')"
+      onclick="enviarMatchAlScoreboardPorIndice(${index}, 'bracket')"
       onmouseover="this.style.background='#2a2b42'" 
       onmouseout="this.style.background='#23243a'"
       title="Enviar al scoreboard">
@@ -905,10 +920,27 @@ function escapeQuotes(str) {
   return (str || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
 }
 
-function enviarMatchAlScoreboard(p1, p2, s1, s2, round, fase) {
-  // Hacer esta función síncrona pero usar async internamente
+// Extraer tag y nombre si existe el delimitador '|'
+function splitTagName(str) {
+  console.log('[splitTagName] Input recibido:', str, 'Tipo:', typeof str);
+  if (!str || str === undefined || str === null || str === '') {
+    console.log('[splitTagName] String vacío/nulo, retornando tag y name vacíos');
+    return { tag: '', name: '' };
+  }
+  const parts = str.split('|');
+  if (parts.length === 2) {
+    const result = { tag: parts[0].trim(), name: parts[1].trim() };
+    console.log('[splitTagName] Split con |, resultado:', result);
+    return result;
+  }
+  const result = { tag: '', name: str.trim() };
+  console.log('[splitTagName] Sin split, resultado:', result);
+  return result;
+}
+
+function cargarMatchObject(set) {
+  // Guardar comentaristas existentes antes de actualizar la UI
   (async () => {
-    // Leer comentaristas existentes antes de actualizar
     let comentaristasExistentes = [];
     try {
       const resLoad = await window.__TAURI__.core.invoke('load-json', { tipo: 'scoreboard' });
@@ -918,62 +950,143 @@ function enviarMatchAlScoreboard(p1, p2, s1, s2, round, fase) {
     } catch (e) {
       console.warn('No se pudieron cargar comentaristas existentes:', e);
     }
-
-    // Preservar comentaristas en variable global ANTES de cambiar la UI
     window.comentaristasPreservados = comentaristasExistentes;
     console.log('[StartGG] Comentaristas preservados:', comentaristasExistentes);
   })();
 
   showTab(0);
 
-  // Extraer tag y nombre si existe el delimitador '|'
-  function splitTagName(str) {
-    console.log('[splitTagName] Input recibido:', str, 'Tipo:', typeof str);
-    if (!str || str === undefined || str === null || str === '') {
-      console.log('[splitTagName] String vacío/nulo, retornando tag y name vacíos');
-      return { tag: '', name: '' };
-    }
-    const parts = str.split('|');
-    if (parts.length === 2) {
-      const result = { tag: parts[0].trim(), name: parts[1].trim() };
-      console.log('[splitTagName] Split con |, resultado:', result);
-      return result;
-    }
-    const result = { tag: '', name: str.trim() };
-    console.log('[splitTagName] Sin split, resultado:', result);
-    return result;
-  }
-  const p1Data = splitTagName(p1);
-  const p2Data = splitTagName(p2);
+  const slot1 = set.slots?.[0];
+  const slot2 = set.slots?.[1];
+  const entrant1 = slot1?.entrant;
+  const entrant2 = slot2?.entrant;
   
-  console.log('[enviarMatchAlScoreboard] p1Data:', p1Data, 'p2Data:', p2Data);
+  const s1 = slot1?.standing?.stats?.score?.value;
+  const s2 = slot2?.standing?.stats?.score?.value;
+  
+  const round = set.fullRoundText || set.fase || '';
+  const fase = set.fase || '';
+  
+  let roundDisplay = round;
+  if (fase) {
+    const faseLower = fase.toLowerCase();
+    if (faseLower.includes('round') || 
+        faseLower.includes('bracket') ||
+        (faseLower.includes('pool') && !faseLower.includes('top'))) {
+      roundDisplay = round + ' - Pools';
+    }
+  }
 
+  // Parsear Entrant 1
+  let p1Data = { name: '', tag: '' };
+  let p1bData = { name: '', tag: '' };
+  if (entrant1) {
+    if (entrant1.participants && entrant1.participants.length > 0) {
+      p1Data.name = entrant1.participants[0].gamerTag || '';
+      p1Data.tag = entrant1.participants[0].prefix || '';
+      if (entrant1.participants.length > 1) {
+        p1bData.name = entrant1.participants[1].gamerTag || '';
+        p1bData.tag = entrant1.participants[1].prefix || '';
+      }
+    } else {
+      p1Data = splitTagName(entrant1.name);
+    }
+  }
+
+  // Parsear Entrant 2
+  let p2Data = { name: '', tag: '' };
+  let p2bData = { name: '', tag: '' };
+  if (entrant2) {
+    if (entrant2.participants && entrant2.participants.length > 0) {
+      p2Data.name = entrant2.participants[0].gamerTag || '';
+      p2Data.tag = entrant2.participants[0].prefix || '';
+      if (entrant2.participants.length > 1) {
+        p2bData.name = entrant2.participants[1].gamerTag || '';
+        p2bData.tag = entrant2.participants[1].prefix || '';
+      }
+    } else {
+      p2Data = splitTagName(entrant2.name);
+    }
+  }
+
+  const game = document.getElementById('gameSel')?.value || '';
+  const is2xko = (game === '2XKO');
+
+  // Limpiar inputs secundarios de forma preventiva
+  if (document.getElementById('p1bNameInput')) document.getElementById('p1bNameInput').value = '';
+  if (document.getElementById('p1bTagInput')) document.getElementById('p1bTagInput').value = '';
+  if (document.getElementById('p2bNameInput')) document.getElementById('p2bNameInput').value = '';
+  if (document.getElementById('p2bTagInput')) document.getElementById('p2bTagInput').value = '';
+
+  // Asignar al DOM
   document.getElementById('p1NameInput').value = p1Data.name;
-  document.getElementById('p2NameInput').value = p2Data.name;
   document.getElementById('p1TagInput').value = p1Data.tag;
+  document.getElementById('p2NameInput').value = p2Data.name;
   document.getElementById('p2TagInput').value = p2Data.tag;
   
-  // Para matches en progreso, establecer scores como 0-0
-  document.getElementById('p1Score').textContent = '0';
-  document.getElementById('p2Score').textContent = '0';
-  
-  // Siempre actualizar el campo de ronda con la información de Start.gg
+  if (is2xko) {
+    if (document.getElementById('p1bNameInput')) document.getElementById('p1bNameInput').value = p1bData.name;
+    if (document.getElementById('p1bTagInput')) document.getElementById('p1bTagInput').value = p1bData.tag;
+    if (document.getElementById('p2bNameInput')) document.getElementById('p2bNameInput').value = p2bData.name;
+    if (document.getElementById('p2bTagInput')) document.getElementById('p2bTagInput').value = p2bData.tag;
+  } else {
+    // Si no es 2XKO pero hay compañero, los combinamos con /
+    if (p1bData.name) {
+      document.getElementById('p1NameInput').value = p1Data.name + ' / ' + p1bData.name;
+    }
+    if (p2bData.name) {
+      document.getElementById('p2NameInput').value = p2Data.name + ' / ' + p2bData.name;
+    }
+  }
+
+  // Establecer marcadores
+  const score1Value = s1 !== null && s1 !== undefined && s1 !== '' ? s1.toString() : '0';
+  const score2Value = s2 !== null && s2 !== undefined && s2 !== '' ? s2.toString() : '0';
+  document.getElementById('p1Score').textContent = score1Value;
+  document.getElementById('p2Score').textContent = score2Value;
+
+  // Actualizar ronda
   const sbRoundElement = document.getElementById('sbRound');
-  sbRoundElement.value = round;
+  if (sbRoundElement) sbRoundElement.value = roundDisplay;
 
-  document.getElementById('p1Name').textContent = p1Data.name;
-  document.getElementById('p2Name').textContent = p2Data.name;
+  // Displays de texto bajo el score
+  if (document.getElementById('p1Name')) document.getElementById('p1Name').textContent = p1Data.name;
+  if (document.getElementById('p2Name')) document.getElementById('p2Name').textContent = p2Data.name;
 
-  // Guarda el round y la fase en variables globales para que el Scoreboard los incluya
-  window.currentRoundName = round;
-  window.currentFaseOriginal = fase || '';
+  // Variables globales
+  window.currentRoundName = roundDisplay;
+  window.currentFaseOriginal = fase;
 
-  // Esperar un poco antes de guardar para asegurar que la variable global esté lista
   setTimeout(() => {
     if (typeof guardarScoreboard === "function") {
       guardarScoreboard();
     }
   }, 100);
+}
+
+function enviarMatchAlScoreboardPorIndice(index, source) {
+  let set = null;
+  if (source === 'search') {
+    set = window.filteredSearchMatches?.[index];
+  } else if (source === 'bracket') {
+    set = window.displayedBracketMatches?.[index];
+  }
+  if (set) {
+    cargarMatchObject(set);
+  }
+}
+
+// Compatibilidad hacia atrás por si otra función lo llama
+function enviarMatchAlScoreboard(p1, p2, s1, s2, round, fase) {
+  const mockSet = {
+    fullRoundText: round,
+    fase: fase,
+    slots: [
+      { entrant: { name: p1, participants: [] }, standing: { stats: { score: { value: s1 } } } },
+      { entrant: { name: p2, participants: [] }, standing: { stats: { score: { value: s2 } } } }
+    ]
+  };
+  cargarMatchObject(mockSet);
 }
 
 // === GUARDAR BRACKET BUTTON ===
@@ -1229,13 +1342,17 @@ async function cargarMatchesDelEvento() {
       window.currentEventSets = res.sets;
 
       // Filtrar matches en progreso
+      const showCompleted = document.getElementById('startggShowCompleted')?.checked;
       const matchesEnProgreso = res.sets.filter(set => {
         const p1 = set.slots[0]?.entrant?.name || 'TBD';
         const p2 = set.slots[1]?.entrant?.name || 'TBD';
+        const tieneDosLuchadores = p1 !== 'TBD' && p2 !== 'TBD';
+        if (showCompleted) {
+          return tieneDosLuchadores;
+        }
         const s1 = set.slots[0]?.standing?.stats?.score?.value;
         const s2 = set.slots[1]?.standing?.stats?.score?.value;
 
-        const tieneDosLuchadores = p1 !== 'TBD' && p2 !== 'TBD';
         const sinGanador = !set.winnerId && !set.winner_id;
         const scoresEnCero = (s1 === null || s1 === undefined || s1 === 0) && (s2 === null || s2 === undefined || s2 === 0);
 
@@ -1319,26 +1436,7 @@ function cargarMatchStartggEnScoreboard() {
   const selectedOption = selector.options[selector.selectedIndex];
   const matchData = JSON.parse(selectedOption.dataset.match);
   
-  const p1 = matchData.slots?.[0]?.entrant?.name || 'TBD';
-  const p2 = matchData.slots?.[1]?.entrant?.name || 'TBD';
-  const s1 = matchData.slots?.[0]?.standing?.stats?.score?.value ?? '';
-  const s2 = matchData.slots?.[1]?.standing?.stats?.score?.value ?? '';
-  const round = matchData.fullRoundText || matchData.fase || '';
-  const faseOriginal = matchData.fase || '';
-  
-  // Aplicar la misma lógica que en las tarjetas para determinar si agregar " - Pools"
-  let roundDisplay = round;
-  if (faseOriginal) {
-    const faseOriginalLower = faseOriginal.toLowerCase();
-    if (faseOriginalLower.includes('round') || 
-        faseOriginalLower.includes('bracket') ||
-        (faseOriginalLower.includes('pool') && !faseOriginalLower.includes('top'))) {
-      roundDisplay = round + ' - Pools';
-    }
-  }
-  
-  // Usar la función existente para enviar al scoreboard
-  enviarMatchAlScoreboard(p1, p2, s1, s2, roundDisplay, faseOriginal);
+  cargarMatchObject(matchData);
 }
 
 // Actualizar matches desde Start.gg en el scoreboard
@@ -1378,13 +1476,17 @@ async function actualizarMatchesStartggEnScoreboard() {
     
     if (res.sets && res.sets.length > 0) {
       // Filtrar matches en progreso
+      const showCompleted = document.getElementById('startggShowCompleted')?.checked;
       const matchesEnProgreso = res.sets.filter(set => {
         const p1 = set.slots[0]?.entrant?.name || 'TBD';
         const p2 = set.slots[1]?.entrant?.name || 'TBD';
+        const tieneDosLuchadores = p1 !== 'TBD' && p2 !== 'TBD';
+        if (showCompleted) {
+          return tieneDosLuchadores;
+        }
         const s1 = set.slots[0]?.standing?.stats?.score?.value;
         const s2 = set.slots[1]?.standing?.stats?.score?.value;
 
-        const tieneDosLuchadores = p1 !== 'TBD' && p2 !== 'TBD';
         const sinGanador = !set.winnerId && !set.winner_id;
         const scoresEnCero = (s1 === null || s1 === undefined || s1 === 0) && (s2 === null || s2 === undefined || s2 === 0);
 
