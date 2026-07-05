@@ -1043,16 +1043,16 @@ setInterval(updateOverlay, 2000);</code></pre>
           </div>
         </div>
 
-        <h3>Propiedades añadidas al JSON de salida (scoreboard.json)</h3>
-        <p>Al guardar el scoreboard en este modo, se escriben las siguientes claves adicionales:</p>
+        <h3>Propiedades en el JSON de salida (scoreboard.json)</h3>
+        <p>Al guardar en este modo, los integrantes secundarios se concatenan directamente en las propiedades principales del JSON, eliminando la necesidad de variables adicionales (como 1b y 2b) en el archivo final:</p>
         <div class="tree">
 {
-  "player1b": "Tag del compañero 1",
-  "tag1b": "Prefijo/Sponsor del compañero 1",
-  "char1b": "Segundo personaje del jugador 1",
-  "player2b": "Tag del compañero 2",
-  "tag2b": "Prefijo/Sponsor del compañero 2",
-  "char2b": "Segundo personaje del jugador 2"
+  "player1": "Jugador A / Jugador B",
+  "tag1": "Sponsor A / Sponsor B",
+  "char1": "PersonajeA/PersonajeB",
+  "player2": "Jugador C / Jugador D",
+  "tag2": "Sponsor C / Sponsor D",
+  "char2": "PersonajeC/PersonajeD"
 }
         </div>
 

@@ -12,22 +12,10 @@ $(function() {
 
     function renderScoreboard(data) {
         let p1Name = data.player1 || '';
-        if (data.player1b) {
-            p1Name += ' / ' + data.player1b;
-        }
         let p2Name = data.player2 || '';
-        if (data.player2b) {
-            p2Name += ' / ' + data.player2b;
-        }
         
         let p1Tag = data.tag1 || '';
-        if (data.tag1b) {
-            p1Tag += ' / ' + data.tag1b;
-        }
         let p2Tag = data.tag2 || '';
-        if (data.tag2b) {
-            p2Tag += ' / ' + data.tag2b;
-        }
 
         $('#name1').text(p1Name);
         $('#name2').text(p2Name);

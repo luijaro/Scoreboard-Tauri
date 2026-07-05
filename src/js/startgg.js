@@ -32,6 +32,16 @@ async function buscarStartGG(busquedaTexto = null) {
     }
     const torneo = res.tournamentName || res.tournament?.name || slug;
     const eventos = res.events || [];
+
+    // Guardar información de los videojuegos de los eventos
+    if (!window.startggEventGames) {
+      window.startggEventGames = {};
+    }
+    eventos.forEach(ev => {
+      if (ev.videogame) {
+        window.startggEventGames[ev.id] = ev.videogame;
+      }
+    });
     if (!eventos.length) {
       resultsDiv.innerHTML = `<b>Eventos de ${torneo}:</b><br>No se encontraron eventos para este torneo.`;
       return;
@@ -938,21 +948,36 @@ function splitTagName(str) {
   return result;
 }
 
-function cargarMatchObject(set) {
+async function cargarMatchObject(set) {
   // Guardar comentaristas existentes antes de actualizar la UI
-  (async () => {
-    let comentaristasExistentes = [];
-    try {
-      const resLoad = await window.__TAURI__.core.invoke('load-json', { tipo: 'scoreboard' });
-      if (resLoad.ok && resLoad.data && resLoad.data.comentaristas) {
-        comentaristasExistentes = resLoad.data.comentaristas;
-      }
-    } catch (e) {
-      console.warn('No se pudieron cargar comentaristas existentes:', e);
+  let comentaristasExistentes = [];
+  try {
+    const resLoad = await window.__TAURI__.core.invoke('load-json', { tipo: 'scoreboard' });
+    if (resLoad.ok && resLoad.data && resLoad.data.comentaristas) {
+      comentaristasExistentes = resLoad.data.comentaristas;
     }
-    window.comentaristasPreservados = comentaristasExistentes;
-    console.log('[StartGG] Comentaristas preservados:', comentaristasExistentes);
-  })();
+  } catch (e) {
+    console.warn('No se pudieron cargar comentaristas existentes:', e);
+  }
+  window.comentaristasPreservados = comentaristasExistentes;
+  console.log('[StartGG] Comentaristas preservados:', comentaristasExistentes);
+
+  // DETECTAR Y CAMBIAR JUEGO AUTOMÁTICAMENTE
+  const eventId = window.eventIdActual;
+  const videogame = window.startggEventGames?.[eventId];
+  if (videogame) {
+    const mappedGameCode = mapStartggVideogame(videogame);
+    if (mappedGameCode) {
+      const gameSel = document.getElementById('gameSel');
+      if (gameSel && gameSel.value !== mappedGameCode) {
+        console.log(`[StartGG] Cambiando juego automáticamente de ${gameSel.value} a ${mappedGameCode}`);
+        gameSel.value = mappedGameCode;
+        if (typeof cambiarJuego === 'function') {
+          await cambiarJuego();
+        }
+      }
+    }
+  }
 
   showTab(0);
 
@@ -1064,7 +1089,7 @@ function cargarMatchObject(set) {
   }, 100);
 }
 
-function enviarMatchAlScoreboardPorIndice(index, source) {
+async function enviarMatchAlScoreboardPorIndice(index, source) {
   let set = null;
   if (source === 'search') {
     set = window.filteredSearchMatches?.[index];
@@ -1072,12 +1097,12 @@ function enviarMatchAlScoreboardPorIndice(index, source) {
     set = window.displayedBracketMatches?.[index];
   }
   if (set) {
-    cargarMatchObject(set);
+    await cargarMatchObject(set);
   }
 }
 
 // Compatibilidad hacia atrás por si otra función lo llama
-function enviarMatchAlScoreboard(p1, p2, s1, s2, round, fase) {
+async function enviarMatchAlScoreboard(p1, p2, s1, s2, round, fase) {
   const mockSet = {
     fullRoundText: round,
     fase: fase,
@@ -1086,7 +1111,7 @@ function enviarMatchAlScoreboard(p1, p2, s1, s2, round, fase) {
       { entrant: { name: p2, participants: [] }, standing: { stats: { score: { value: s2 } } } }
     ]
   };
-  cargarMatchObject(mockSet);
+  await cargarMatchObject(mockSet);
 }
 
 // === GUARDAR BRACKET BUTTON ===
@@ -1630,5 +1655,55 @@ async function guardarBracketStartggDesdeWidget() {
     bracketBtn.className = originalClass;
     bracketBtn.disabled = false;
   }, 3000);
+}
+
+function mapStartggVideogame(videogame) {
+  if (!videogame) return null;
+  const id = Number(videogame.id);
+  const name = (videogame.name || '').toLowerCase();
+
+  // Mapeo por ID de start.gg
+  const idMap = {
+    50203: 'UNI2',
+    582: 'VSAV',
+    37: 'BBCF',
+    73221: 'COTW',
+    48548: 'GBVSR',
+    33945: 'GGST',
+    36403: 'HFTF',
+    22407: 'MBAACC',
+    36865: 'MBTL',
+    35218: 'SCON4',
+    610: 'SF3',
+    43868: 'SF6',
+    49783: 'T8',
+    64423: '2XKO',
+    107706: 'Tokon',
+    18: 'MVC3'
+  };
+
+  if (idMap[id]) {
+    return idMap[id];
+  }
+
+  // Fallback por coincidencias de texto en el nombre
+  if (name.includes('2xko')) return '2XKO';
+  if (name.includes('strive')) return 'GGST';
+  if (name.includes('street fighter 6') || name.includes('sf6')) return 'SF6';
+  if (name.includes('street fighter iii') || name.includes('3rd strike')) return 'SF3';
+  if (name.includes('tekken 8')) return 'T8';
+  if (name.includes('under night')) return 'UNI2';
+  if (name.includes('blazblue') && name.includes('central fiction')) return 'BBCF';
+  if (name.includes('type lumina')) return 'MBTL';
+  if (name.includes('actress again')) return 'MBAACC';
+  if (name.includes('vampire savior')) return 'VSAV';
+  if (name.includes('city of the wolves') || name.includes('fatal fury')) return 'COTW';
+  if (name.includes('granblue')) return 'GBVSR';
+  if (name.includes('heritage for the future')) return 'HFTF';
+  if (name.includes('marvel vs') && name.includes('3')) return 'MVC3';
+  if (name.includes('tokon')) return 'Tokon';
+  if (name.includes('clash of ninja 4')) return 'SCON4';
+
+  return null;
 }
 

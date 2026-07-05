@@ -30,6 +30,10 @@ pub async fn startgg_get_events(tournament_slug: String) -> Result<serde_json::V
           id
           name
           slug
+          videogame {{
+            id
+            name
+          }}
         }}
       }}
     }}
