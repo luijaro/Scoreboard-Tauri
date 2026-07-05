@@ -493,14 +493,81 @@ window.scoreboardGameApplied = false;
   if (res.ok && res.data) {
     window.ultimoScoreboardData = res.data;
     const d = res.data;
-    if (d.player1) document.getElementById('p1NameInput').value = d.player1;
-    if (d.player2) document.getElementById('p2NameInput').value = d.player2;
+
+    // Cargar Player 1 / Player 1b
+    if (d.player1) {
+      if (d.player1.includes(' / ')) {
+        const parts = d.player1.split(' / ');
+        document.getElementById('p1NameInput').value = parts[0];
+        if (document.getElementById('p1bNameInput')) document.getElementById('p1bNameInput').value = parts[1] || '';
+      } else {
+        document.getElementById('p1NameInput').value = d.player1;
+        if (document.getElementById('p1bNameInput')) document.getElementById('p1bNameInput').value = '';
+      }
+    }
+
+    // Cargar Player 2 / Player 2b
+    if (d.player2) {
+      if (d.player2.includes(' / ')) {
+        const parts = d.player2.split(' / ');
+        document.getElementById('p2NameInput').value = parts[0];
+        if (document.getElementById('p2bNameInput')) document.getElementById('p2bNameInput').value = parts[1] || '';
+      } else {
+        document.getElementById('p2NameInput').value = d.player2;
+        if (document.getElementById('p2bNameInput')) document.getElementById('p2bNameInput').value = '';
+      }
+    }
+
     if (typeof d.score1 === "number") document.getElementById('p1Score').textContent = d.score1;
     if (typeof d.score2 === "number") document.getElementById('p2Score').textContent = d.score2;
-    if (d.tag1) document.getElementById('p1TagInput').value = d.tag1;
-    if (d.tag2) document.getElementById('p2TagInput').value = d.tag2;
-    if (d.char1 && document.getElementById('p1CharSelect')) document.getElementById('p1CharSelect').value = d.char1;
-    if (d.char2 && document.getElementById('p2CharSelect')) document.getElementById('p2CharSelect').value = d.char2;
+
+    // Cargar Tag 1 / Tag 1b
+    if (d.tag1) {
+      if (d.tag1.includes(' / ')) {
+        const parts = d.tag1.split(' / ');
+        document.getElementById('p1TagInput').value = parts[0];
+        if (document.getElementById('p1bTagInput')) document.getElementById('p1bTagInput').value = parts[1] || '';
+      } else {
+        document.getElementById('p1TagInput').value = d.tag1;
+        if (document.getElementById('p1bTagInput')) document.getElementById('p1bTagInput').value = '';
+      }
+    }
+
+    // Cargar Tag 2 / Tag 2b
+    if (d.tag2) {
+      if (d.tag2.includes(' / ')) {
+        const parts = d.tag2.split(' / ');
+        document.getElementById('p2TagInput').value = parts[0];
+        if (document.getElementById('p2bTagInput')) document.getElementById('p2bTagInput').value = parts[1] || '';
+      } else {
+        document.getElementById('p2TagInput').value = d.tag2;
+        if (document.getElementById('p2bTagInput')) document.getElementById('p2bTagInput').value = '';
+      }
+    }
+
+    // Cargar Char 1 / Char 1b
+    if (d.char1 && document.getElementById('p1CharSelect')) {
+      if (d.char1.includes('/')) {
+        const parts = d.char1.split('/');
+        document.getElementById('p1CharSelect').value = parts[0];
+        if (document.getElementById('p1bCharSelect')) document.getElementById('p1bCharSelect').value = parts[1] || '';
+      } else {
+        document.getElementById('p1CharSelect').value = d.char1;
+        if (document.getElementById('p1bCharSelect')) document.getElementById('p1bCharSelect').value = '';
+      }
+    }
+
+    // Cargar Char 2 / Char 2b
+    if (d.char2 && document.getElementById('p2CharSelect')) {
+      if (d.char2.includes('/')) {
+        const parts = d.char2.split('/');
+        document.getElementById('p2CharSelect').value = parts[0];
+        if (document.getElementById('p2bCharSelect')) document.getElementById('p2bCharSelect').value = parts[1] || '';
+      } else {
+        document.getElementById('p2CharSelect').value = d.char2;
+        if (document.getElementById('p2bCharSelect')) document.getElementById('p2bCharSelect').value = '';
+      }
+    }
     const savedGame = localStorage.getItem('scoreboard-last-game') || '';
     const gameToRestore = d.game || savedGame;
     if (gameToRestore) document.getElementById('gameSel').value = gameToRestore;
@@ -981,21 +1048,47 @@ function getScoreboardData() {
     document.getElementById('sbEvent').textContent = event;
   }
 
+  // Capturar valores básicos
+  let player1 = document.getElementById('p1NameInput').value;
+  let player2 = document.getElementById('p2NameInput').value;
+  let tag1 = document.getElementById('p1TagInput').value;
+  let tag2 = document.getElementById('p2TagInput').value;
+
+  const player1b = document.getElementById('p1bNameInput')?.value || '';
+  const player2b = document.getElementById('p2bNameInput')?.value || '';
+  const tag1b = document.getElementById('p1bTagInput')?.value || '';
+  const tag2b = document.getElementById('p2bTagInput')?.value || '';
+
+  let char1 = document.getElementById('p1CharSelect')?.value || '';
+  let char2 = document.getElementById('p2CharSelect')?.value || '';
+  const char1b = document.getElementById('p1bCharSelect')?.value || '';
+  const char2b = document.getElementById('p2bCharSelect')?.value || '';
+
+  // Si es 2XKO (duos), concatenar
+  if (game === '2XKO') {
+    if (player1b) player1 = `${player1} / ${player1b}`;
+    if (player2b) player2 = `${player2} / ${player2b}`;
+    if (tag1b) tag1 = `${tag1} / ${tag1b}`;
+    if (tag2b) tag2 = `${tag2} / ${tag2b}`;
+    if (char1b) char1 = `${char1}/${char1b}`;
+    if (char2b) char2 = `${char2}/${char2b}`;
+  }
+
   return {
-    player1: document.getElementById('p1NameInput').value,
-    player2: document.getElementById('p2NameInput').value,
+    player1: player1,
+    player2: player2,
     score1: Number(document.getElementById('p1Score').textContent),
     score2: Number(document.getElementById('p2Score').textContent),
-    tag1: document.getElementById('p1TagInput').value,
-    tag2: document.getElementById('p2TagInput').value,
-    player1b: document.getElementById('p1bNameInput')?.value || '',
-    tag1b: document.getElementById('p1bTagInput')?.value || '',
-    char1b: document.getElementById('p1bCharSelect')?.value || '',
-    player2b: document.getElementById('p2bNameInput')?.value || '',
-    tag2b: document.getElementById('p2bTagInput')?.value || '',
-    char2b: document.getElementById('p2bCharSelect')?.value || '',
-    char1: document.getElementById('p1CharSelect')?.value || '',
-    char2: document.getElementById('p2CharSelect')?.value || '',
+    tag1: tag1,
+    tag2: tag2,
+    player1b: '',
+    tag1b: '',
+    char1b: '',
+    player2b: '',
+    tag2b: '',
+    char2b: '',
+    char1: char1,
+    char2: char2,
     moon1: game === 'MBAACC' ? (document.getElementById('p1MoonSelect')?.value || '') : '',
     moon2: game === 'MBAACC' ? (document.getElementById('p2MoonSelect')?.value || '') : '',
     game: game,
