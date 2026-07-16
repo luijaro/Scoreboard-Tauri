@@ -303,14 +303,30 @@ async function generarTop8StartGG(eventIdInput, eventName) {
         <th style='padding:0.7em 0.5em;'>Personaje</th>
         <th style='padding:0.7em 0.5em;'>Twitter</th>
       </tr></thead><tbody>`;
+      const juegoDefault = document.getElementById('gameSel')?.value || '';
+      const is2xko = (juegoDefault === '2XKO');
+
       top8Data.top8.forEach((j, index) => {
+        let charSelects = `
+          <select id='char${index}' style='background:#23243a;color:#fff;border-radius:6px;padding:0.3em 0.7em;'>
+            ${personajes.map(p => `<option value="${p}"${p===personajes[0]?" selected":""}>${p}</option>`).join("")}
+          </select>
+        `;
+        if (is2xko) {
+          charSelects += `
+          <select id='char2_${index}' style='background:#23243a;color:#fff;border-radius:6px;padding:0.3em 0.7em;margin-left:0.5em;'>
+            ${personajes.map(p => `<option value="${p}"${p===personajes[0]?" selected":""}>${p}</option>`).join("")}
+          </select>
+          `;
+        }
+
         html += `<tr>
           <td style='text-align:center;font-weight:bold;'>${j.final_rank}</td>
           <td style='text-align:center;'>${j.nombre}</td>
           <td style='text-align:center;'>
-            <select id='char${index}' style='background:#23243a;color:#fff;border-radius:6px;padding:0.3em 0.7em;'>
-              ${personajes.map(p => `<option value="${p}"${p===personajes[0]?" selected":""}>${p}</option>`).join("")}
-            </select>
+            <div style='display:flex; align-items:center; justify-content:center; gap:0.5em;'>
+              ${charSelects}
+            </div>
           </td>
           <td style='text-align:center;'>
             <select id='twitter${index}' style='background:#23243a;color:#fff;border-radius:6px;padding:0.3em 0.7em;'>
@@ -386,16 +402,21 @@ async function guardarTop8Actualizado() {
       fecha: new Date().toISOString().slice(0, 10),
       top8: []
     };
+    const juego = document.getElementById('gameSel')?.value || '';
+    const is2xko = (juego === '2XKO');
+
     filasFinales.forEach((fila, index) => {
       const puesto = fila.cells[0].textContent;
       const jugador = fila.cells[1].textContent;
       const personajeSelect = fila.querySelector(`#char${index}`);
+      const personajeSelect2 = is2xko ? fila.querySelector(`#char2_${index}`) : null;
       const twitterSelect = fila.querySelector(`#twitter${index}`);
       
       console.log(`[guardarTop8Actualizado] Fila ${index}:`, {
         puesto,
         jugador,
         personajeSelect: personajeSelect?.value,
+        personajeSelect2: personajeSelect2?.value,
         twitterSelect: twitterSelect?.value
       });
       
@@ -403,7 +424,8 @@ async function guardarTop8Actualizado() {
         top8Data.top8.push({
           nombre: jugador,
           personaje: personajeSelect.value,
-          juego: document.getElementById('gameSel')?.value || '',
+          personaje2: personajeSelect2 ? personajeSelect2.value : '',
+          juego: juego,
           twitter: twitterSelect.value,
           final_rank: parseInt(puesto)
         });

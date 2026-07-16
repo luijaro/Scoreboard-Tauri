@@ -23,11 +23,25 @@ $(function() {
         $('#top8-list').empty();
         top8.forEach((p, i) => {
             const rank = posiciones[i] || (i+1);
-            const charImg = getCharImg(p.personaje, p.juego); // <-- usa p.juego
+            let charHtml = '';
+            if (p.juego === '2XKO' || (p.personaje2 && p.personaje2.trim())) {
+                const charImg1 = getCharImg(p.personaje, p.juego);
+                const charImg2 = getCharImg(p.personaje2, p.juego);
+                charHtml = `
+                    <div class="top8-character-container">
+                        ${charImg1 ? `<img class="top8-character" src="${charImg1}" alt="${p.personaje}">` : ''}
+                        ${charImg2 ? `<img class="top8-character" src="${charImg2}" alt="${p.personaje2}">` : ''}
+                    </div>
+                `;
+            } else {
+                const charImg = getCharImg(p.personaje, p.juego);
+                charHtml = charImg ? `<img class="top8-character" src="${charImg}" alt="${p.personaje}">` : '';
+            }
+
             const $slot = $(`
                 <div class="top8-slot">
                     <span class="top8-rank">${rank}°</span>
-                    <img class="top8-character" src="${charImg}" alt="${p.personaje}">
+                    ${charHtml}
                     <div class="top8-info">
                         <span class="top8-name">${p.nombre}</span>
                         <span class="top8-twitter">${getTwitter(p.twitter, p.nombre)}</span>

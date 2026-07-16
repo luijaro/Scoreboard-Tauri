@@ -1170,9 +1170,12 @@ async function cambiarJuego() {
     p2bChar: document.getElementById('p2bCharSelect') ? document.getElementById('p2bCharSelect').value : '',
   };
   const selectedTop8Chars = [];
+  const selectedTop8Chars2 = [];
   for (let i = 0; i < 8; ++i) {
     const el = document.getElementById('top8char' + i);
     selectedTop8Chars[i] = el ? el.value : '';
+    const el2 = document.getElementById('top8char2_' + i);
+    selectedTop8Chars2[i] = el2 ? el2.value : '';
   }
 
   localStorage.setItem('scoreboard-last-game', juegoFolder);
@@ -1196,7 +1199,10 @@ async function cambiarJuego() {
     llenarSelectPersonajes('p1bCharSelect');
     llenarSelectPersonajes('p2CharSelect');
     llenarSelectPersonajes('p2bCharSelect');
-    for (let i = 0; i < 8; ++i) llenarSelectPersonajes('top8char' + i);
+    for (let i = 0; i < 8; ++i) {
+      llenarSelectPersonajes('top8char' + i);
+      llenarSelectPersonajes('top8char2_' + i);
+    }
     
     const p1Select = document.getElementById('p1CharSelect');
     if (p1Select) {
@@ -1234,6 +1240,8 @@ async function cambiarJuego() {
     for (let i = 0; i < 8; ++i) {
       const select = document.getElementById('top8char' + i);
       if (select) select.value = selectedTop8Chars[i];
+      const select2 = document.getElementById('top8char2_' + i);
+      if (select2) select2.value = selectedTop8Chars2[i];
     }
     updateVisual();
   } else {
@@ -1244,7 +1252,10 @@ async function cambiarJuego() {
     llenarSelectPersonajes('p1bCharSelect');
     llenarSelectPersonajes('p2CharSelect');
     llenarSelectPersonajes('p2bCharSelect');
-    for (let i = 0; i < 8; ++i) llenarSelectPersonajes('top8char' + i);
+    for (let i = 0; i < 8; ++i) {
+      llenarSelectPersonajes('top8char' + i);
+      llenarSelectPersonajes('top8char2_' + i);
+    }
     
     const p1Select = document.getElementById('p1CharSelect');
     if (p1Select) {
@@ -1266,6 +1277,8 @@ async function cambiarJuego() {
     for (let i = 0; i < 8; ++i) {
       const select = document.getElementById('top8char' + i);
       if (select) select.value = selectedTop8Chars[i];
+      const select2 = document.getElementById('top8char2_' + i);
+      if (select2) select2.value = selectedTop8Chars2[i];
     }
     updateVisual();
   }
@@ -1299,15 +1312,30 @@ async function cargarTop8() {
   msg.textContent = "Top 8 cargado.";
   const tbody = document.getElementById('top8Table');
   tbody.innerHTML = "";
+  
+  const game = document.getElementById('gameSel').value;
+  const is2xko = (game === '2XKO');
+
   r.top8.forEach((p, idx) => {
+    let charSelects = `
+      <select class="sb-dropdown" id="top8char${idx}" onchange="sincronizarCambioTop8('char', ${idx}, this.value)">
+        ${listaPersonajes.map(char => `<option value="${char}">${char}</option>`).join("")}
+      </select>
+    `;
+    if (is2xko) {
+      charSelects += `
+      <select class="sb-dropdown" id="top8char2_${idx}" style="margin-left:0.5em;" onchange="sincronizarCambioTop8('char2', ${idx}, this.value)">
+        ${listaPersonajes.map(char => `<option value="${char}">${char}</option>`).join("")}
+      </select>
+      `;
+    }
+
     tbody.innerHTML += `
       <tr>
         <td style="padding:0.5em 1em;">${p.final_rank}</td>
         <td style="padding:0.5em 1em;">${p.name}</td>
-        <td style="padding:0.5em 1em;">
-          <select class="sb-dropdown" id="top8char${idx}" onchange="sincronizarCambioTop8('char', ${idx}, this.value)">
-            ${listaPersonajes.map(char => `<option value="${char}">${char}</option>`).join("")}
-          </select>
+        <td style="padding:0.5em 1em; display:flex; align-items:center; gap:0.5em;">
+          ${charSelects}
         </td>
         <td style="padding:0.5em 1em;">
           <select class="sb-dropdown" id="top8twitter${idx}" onchange="sincronizarCambioTop8('twitter', ${idx}, this.value)"></select>
@@ -1336,6 +1364,7 @@ async function guardarTop8() {
   if (!tbody.children.length) return;
   const top8Data = [];
   const juego = document.getElementById('gameSel').value;
+  const is2xko = (juego === '2XKO');
 
   const nombreTorneo = window.nombreTorneoActual || "Torneo sin nombre";
   const fechaInput = document.getElementById('fechaTop8');
@@ -1348,8 +1377,10 @@ async function guardarTop8() {
   for (let i = 0; i < tbody.children.length; ++i) {
     const jugador = tbody.children[i].children[1].textContent;
     const personaje = document.getElementById('top8char' + i).value;
+    const el2 = document.getElementById('top8char2_' + i);
+    const personaje2 = el2 ? el2.value : '';
     const twitter = document.getElementById('top8twitter' + i).value; // <-- ahora es select
-    top8Data.push({ nombre: jugador, personaje, juego, twitter });
+    top8Data.push({ nombre: jugador, personaje, personaje2, juego, twitter });
   }
 
   const dataToSave = {
@@ -2788,6 +2819,11 @@ function sincronizarCambioTop8(tipo, idx, valor) {
   if (tipo === 'char') {
     const tabEl = document.getElementById(`top8char${idx}`);
     const widgetEl = document.getElementById(`challongeTop8Char${idx}`);
+    if (tabEl && tabEl.value !== valor) tabEl.value = valor;
+    if (widgetEl && widgetEl.value !== valor) widgetEl.value = valor;
+  } else if (tipo === 'char2') {
+    const tabEl = document.getElementById(`top8char2_${idx}`);
+    const widgetEl = document.getElementById(`challongeTop8Char2_${idx}`);
     if (tabEl && tabEl.value !== valor) tabEl.value = valor;
     if (widgetEl && widgetEl.value !== valor) widgetEl.value = valor;
   } else if (tipo === 'twitter') {

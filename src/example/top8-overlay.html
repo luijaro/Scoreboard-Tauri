@@ -66,6 +66,26 @@
             background: #222;
             margin-right: 16px;
             border: 2px solid #7fd6ff44;
+            flex-shrink: 0;
+        }
+        .top8-character-container {
+            display: flex;
+            align-items: center;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+        .top8-character-container .top8-character {
+            margin-right: 0;
+        }
+        .top8-character-container .top8-character:nth-child(2) {
+            margin-left: -18px;
+            border-color: #ffe06644;
+            transform: scale(0.9);
+            z-index: 1;
+            box-shadow: -2px 0 6px rgba(0,0,0,0.5);
+        }
+        .top8-character-container .top8-character:nth-child(1) {
+            z-index: 2;
         }
         .top8-info {
             display: flex;

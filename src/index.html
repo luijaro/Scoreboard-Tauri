@@ -1046,13 +1046,26 @@ Haz lo mismo para los otros métodos relacionados si no existen.
           html += '<tbody>';
 
           top8Data.forEach((player, idx) => {
+            let charSelects = `
+        <select id="challongeTop8Char${idx}" class="top8-ch-select" onchange="sincronizarCambioTop8('char', ${idx}, this.value)">
+          ${(window.listaPersonajes || []).map(char => `<option value="${char}">${char}</option>`).join("")}
+        </select>
+            `;
+            if (currentGame === '2XKO') {
+              charSelects += `
+        <select id="challongeTop8Char2_${idx}" class="top8-ch-select" style="margin-top: 4px;" onchange="sincronizarCambioTop8('char2', ${idx}, this.value)">
+          ${(window.listaPersonajes || []).map(char => `<option value="${char}">${char}</option>`).join("")}
+        </select>
+              `;
+            }
+
             html += `<tr>`;
             html += `<td style="text-align:center; font-weight:bold;">${player.final_rank}</td>`;
             html += `<td>${player.name}</td>`;
             html += `<td>
-        <select id="challongeTop8Char${idx}" class="top8-ch-select" onchange="sincronizarCambioTop8('char', ${idx}, this.value)">
-          ${(window.listaPersonajes || []).map(char => `<option value="${char}">${char}</option>`).join("")}
-        </select>
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          ${charSelects}
+        </div>
       </td>`;
             html += `<td>
         <select id="challongeTop8Twitter${idx}" class="top8-ch-twitter" onchange="sincronizarCambioTop8('twitter', ${idx}, this.value)">
@@ -1151,17 +1164,21 @@ Haz lo mismo para los otros métodos relacionados si no existen.
         }
 
         const currentGame = document.getElementById('gameSel')?.value || 'GGST';
+        const is2xko = (currentGame === '2XKO');
         const top8ForSave = [];
 
         window.challongeTop8Data.players.forEach((player, idx) => {
           const charSelect = document.getElementById(`challongeTop8Char${idx}`);
+          const charSelect2 = is2xko ? document.getElementById(`challongeTop8Char2_${idx}`) : null;
           const twitterSelect = document.getElementById(`challongeTop8Twitter${idx}`);
 
           top8ForSave.push({
             nombre: player.name,
             personaje: charSelect ? charSelect.value : '',
+            personaje2: charSelect2 ? charSelect2.value : '',
             juego: currentGame,
-            twitter: twitterSelect ? twitterSelect.value : ''
+            twitter: twitterSelect ? twitterSelect.value : '',
+            final_rank: player.final_rank
           });
         });
 
@@ -1426,8 +1443,24 @@ Haz lo mismo para los otros métodos relacionados si no existen.
             // Usar la misma lógica simple que la pestaña principal
             const name = player.nombre || player.gamerTag || player.name || `Jugador ${position}`;
             const character = player.character || '';
+            const character2 = player.character2 || '';
 
             console.log(`[Top8Widget] Nombre extraído: ${name}, Personaje: ${character}`);
+
+            let charSelects = `
+            <select id="top8WidgetChar${index}" class="widget-select" style="padding:2px 4px; font-size:0.8em; min-width:80px; max-width:100px;" onchange="actualizarTop8WidgetData()">
+              <option value="">Personaje</option>
+              ${window.listaPersonajes ? window.listaPersonajes.map(char => `<option value="${char}" ${char === character ? 'selected' : ''}>${char}</option>`).join('') : ''}
+            </select>
+            `;
+            if (currentGame === '2XKO') {
+              charSelects += `
+            <select id="top8WidgetChar2_${index}" class="widget-select" style="padding:2px 4px; font-size:0.8em; min-width:80px; max-width:100px;" onchange="actualizarTop8WidgetData()">
+              <option value="">Personaje 2</option>
+              ${window.listaPersonajes ? window.listaPersonajes.map(char => `<option value="${char}" ${char === character2 ? 'selected' : ''}>${char}</option>`).join('') : ''}
+            </select>
+              `;
+            }
 
             html += `
   <div class="top8-widget-item" style="display:flex; align-items:center; padding:6px 8px; background:rgba(255,255,255,0.05); border-radius:4px; border-left:3px solid ${getPositionColor(position)}; flex-wrap:wrap; gap:8px;">
@@ -1439,11 +1472,8 @@ Haz lo mismo para los otros métodos relacionados si no existen.
               </div>
             </div>
           </div>
-          <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-            <select id="top8WidgetChar${index}" class="widget-select" style="padding:2px 4px; font-size:0.8em; min-width:80px; max-width:100px;" onchange="actualizarTop8WidgetData()">
-              <option value="">Personaje</option>
-              ${window.listaPersonajes ? window.listaPersonajes.map(char => `<option value="${char}" ${char === character ? 'selected' : ''}>${char}</option>`).join('') : ''}
-            </select>
+          <div style="display:flex; align-items:center; gap:6px; flex-shrink:0; flex-direction:column;">
+            ${charSelects}
           </div>
         </div>
       `;
@@ -1460,12 +1490,14 @@ Haz lo mismo para los otros métodos relacionados si no existen.
               // Usar la misma lógica simple que arriba
               const extractedName = player.nombre || player.gamerTag || player.name || `Jugador ${index + 1}`;
               const extractedCharacter = player.character || '';
+              const extractedCharacter2 = player.character2 || '';
 
               return {
                 ...player,
                 originalIndex: index,
                 extractedName: extractedName,
-                extractedCharacter: extractedCharacter
+                extractedCharacter: extractedCharacter,
+                extractedCharacter2: extractedCharacter2
               };
             })
           };
@@ -1500,11 +1532,18 @@ Haz lo mismo para los otros métodos relacionados si no existen.
       function actualizarTop8WidgetData() {
         if (!window.currentTop8Data) return;
 
+        const juego = document.getElementById('gameSel')?.value || '';
+        const is2xko = (juego === '2XKO');
+
         // Actualizar los personajes seleccionados en los datos
         window.currentTop8Data.players.forEach((player, index) => {
           const charSelect = document.getElementById(`top8WidgetChar${index}`);
           if (charSelect) {
             player.selectedCharacter = charSelect.value;
+          }
+          const charSelect2 = is2xko ? document.getElementById(`top8WidgetChar2_${index}`) : null;
+          if (charSelect2) {
+            player.selectedCharacter2 = charSelect2.value;
           }
         });
       }
@@ -1519,19 +1558,28 @@ Haz lo mismo para los otros métodos relacionados si no existen.
         actualizarTop8WidgetData();
 
         const data = window.currentTop8Data;
-        let mensaje = `🏆 TOP 8 - ${data.eventName}\\n\\n`;
+        const juego = document.getElementById('gameSel')?.value || '';
+        const is2xko = (juego === '2XKO');
+        let mensaje = `🏆 TOP 8 - ${data.eventName}\n\n`;
 
         data.players.forEach((player, index) => {
           const emoji = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣'][index] || `${index + 1}º`;
           const name = player.extractedName || player.gamerTag || player.name || 'Jugador desconocido';
           const character = player.selectedCharacter || player.extractedCharacter || '';
+          const character2 = is2xko ? (player.selectedCharacter2 || player.extractedCharacter2 || '') : '';
 
           mensaje += `${emoji} ${name}`;
-          if (character) mensaje += ` (${character})`;
-          mensaje += `\\n`;
+          if (character) {
+            if (character2) {
+              mensaje += ` (${character} / ${character2})`;
+            } else {
+              mensaje += ` (${character})`;
+            }
+          }
+          mensaje += `\n`;
         });
 
-        mensaje += '\\n#FGC #StartGG';
+        mensaje += '\n#FGC #StartGG';
 
         // Copiar al portapapeles
         navigator.clipboard.writeText(mensaje).then(() => {
@@ -1559,26 +1607,34 @@ Haz lo mismo para los otros métodos relacionados si no existen.
 
         const data = window.currentTop8Data;
         const juego = document.getElementById('gameSel')?.value || '';
+        const is2xko = (juego === '2XKO');
         const fecha = new Date().toLocaleDateString('es-CL');
 
         const top8Data = data.players.map((player, index) => {
           const name = player.extractedName || player.gamerTag || player.name || 'Jugador desconocido';
           const character = player.selectedCharacter || player.extractedCharacter || '';
+          const character2 = is2xko ? (player.selectedCharacter2 || player.extractedCharacter2 || '') : '';
 
           return {
-            puesto: index + 1,
             nombre: name,
             personaje: character,
-            juego: juego
+            personaje2: character2,
+            juego: juego,
+            final_rank: index + 1
           };
         });
 
+        const dataToSave = {
+          evento: data.eventName,
+          fecha: fecha,
+          top8: top8Data
+        };
+
         try {
           const res = await window.__TAURI__.core.invoke('save-json', {
-            evento: data.eventName,
-            fecha: fecha,
-            top8: top8Data
-          }, 'top8');
+            data: dataToSave,
+            tipo: 'top8'
+          });
 
           if (res.ok) {
             mostrarNotificacion("✅ Top 8 guardado correctamente.", "success");
