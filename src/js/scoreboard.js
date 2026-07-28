@@ -1376,11 +1376,14 @@ async function guardarTop8() {
 
   for (let i = 0; i < tbody.children.length; ++i) {
     const jugador = tbody.children[i].children[1].textContent;
-    const personaje = document.getElementById('top8char' + i).value;
+    let personaje = document.getElementById('top8char' + i).value;
     const el2 = document.getElementById('top8char2_' + i);
     const personaje2 = el2 ? el2.value : '';
+    if (is2xko && personaje2) {
+      personaje = `${personaje}/${personaje2}`;
+    }
     const twitter = document.getElementById('top8twitter' + i).value; // <-- ahora es select
-    top8Data.push({ nombre: jugador, personaje, personaje2, juego, twitter });
+    top8Data.push({ nombre: jugador, personaje, juego, twitter });
   }
 
   const dataToSave = {

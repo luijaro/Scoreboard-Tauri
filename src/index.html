@@ -1612,13 +1612,15 @@ Haz lo mismo para los otros métodos relacionados si no existen.
 
         const top8Data = data.players.map((player, index) => {
           const name = player.extractedName || player.gamerTag || player.name || 'Jugador desconocido';
-          const character = player.selectedCharacter || player.extractedCharacter || '';
+          let character = player.selectedCharacter || player.extractedCharacter || '';
           const character2 = is2xko ? (player.selectedCharacter2 || player.extractedCharacter2 || '') : '';
+          if (is2xko && character2) {
+            character = `${character}/${character2}`;
+          }
 
           return {
             nombre: name,
             personaje: character,
-            personaje2: character2,
             juego: juego,
             final_rank: index + 1
           };

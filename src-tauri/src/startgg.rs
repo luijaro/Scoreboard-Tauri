@@ -62,6 +62,7 @@ pub async fn startgg_get_events(tournament_slug: String) -> Result<serde_json::V
 pub async fn startgg_get_matches(event_id: i64) -> Result<serde_json::Value, String> {
     let token = get_startgg_token().await?;
     let mut all_sets = vec![];
+    let mut videogame = Value::Null;
     let client = Client::new();
 
     // Consultamos los sets directamente a nivel del Evento para evitar múltiples llamadas en serie por cada fase
@@ -69,6 +70,10 @@ pub async fn startgg_get_matches(event_id: i64) -> Result<serde_json::Value, Str
         let query_sets = format!(r#"
           query EventSets {{
             event(id: {}) {{
+              videogame {{
+                id
+                name
+              }}
               sets(perPage: 50, page: {}) {{
                 nodes {{
                   id
@@ -107,6 +112,12 @@ pub async fn startgg_get_matches(event_id: i64) -> Result<serde_json::Value, Str
           
         println!("Start.gg response: {}", serde_json::to_string_pretty(&data).unwrap_or_default());
         
+        if videogame.is_null() {
+            if let Some(vg) = data.pointer("/data/event/videogame") {
+                videogame = vg.clone();
+            }
+        }
+
         let sets = data.pointer("/data/event/sets/nodes").and_then(|p| p.as_array()).cloned().unwrap_or_default();
         
         if sets.is_empty() { break; }
@@ -123,7 +134,7 @@ pub async fn startgg_get_matches(event_id: i64) -> Result<serde_json::Value, Str
         }
     }
 
-    Ok(serde_json::json!({ "ok": true, "sets": all_sets }))
+    Ok(serde_json::json!({ "ok": true, "sets": all_sets, "videogame": videogame }))
 }
 
 #[tauri::command(rename = "startgg-get-standings", rename_all = "camelCase")]
@@ -133,6 +144,10 @@ pub async fn startgg_get_standings(event_id: i64) -> Result<serde_json::Value, S
     query EventStandings {{
       event(id: {}) {{
         name
+        videogame {{
+          id
+          name
+        }}
         standings(query: {{ perPage: 8, page: 1 }}) {{
           nodes {{
             placement
@@ -153,7 +168,8 @@ pub async fn startgg_get_standings(event_id: i64) -> Result<serde_json::Value, S
     
     let nodes = data.pointer("/data/event/standings/nodes").and_then(|n| n.as_array()).cloned().unwrap_or_default();
     let event_name = data.pointer("/data/event/name").and_then(|n| n.as_str()).unwrap_or("");
-    
+    let videogame = data.pointer("/data/event/videogame").cloned().unwrap_or(Value::Null);
+
     let mut top8 = vec![];
     for n in nodes {
         let nombre = n.pointer("/entrant/name").and_then(|n| n.as_str()).unwrap_or("");
@@ -164,7 +180,7 @@ pub async fn startgg_get_standings(event_id: i64) -> Result<serde_json::Value, S
         }));
     }
 
-    Ok(serde_json::json!({ "ok": true, "eventName": event_name, "top8": top8 }))
+    Ok(serde_json::json!({ "ok": true, "eventName": event_name, "top8": top8, "videogame": videogame }))
 }
 
 #[tauri::command(rename = "startgg-get-event-state", rename_all = "camelCase")]

@@ -157,7 +157,7 @@ async function guardarBracketStartGG(eventIdInput, eventName) {
     // Guardar bracket
     const torneo = eventName || '';
     const fecha = new Date().toLocaleDateString('es-CL');
-    const saveResult = await guardarBracketEnJson(torneo, fecha, res.sets);
+    const saveResult = await guardarBracketEnJson(torneo, fecha, res.sets, res.videogame || window.startggEventGames?.[eventId]);
 
     if (!saveResult.ok) {
       throw new Error(saveResult.error || 'Error desconocido al guardar');
@@ -277,16 +277,26 @@ async function generarTop8StartGG(eventIdInput, eventName) {
     // Construir datos para top8.json, prellenando personaje y twitter
     const personajeDefault = personajes[0] || '';
     const twitterDefault = twitters[0] || '';
-    const juegoDefault = document.getElementById('gameSel')?.value || '';
+    const videogame = res.videogame || window.startggEventGames?.[eventId] || null;
+    const gameCode = mapStartggVideogame(videogame) || document.getElementById('gameSel')?.value || '';
+    const gameName = videogame?.name || '';
     const eventoNombre = eventName || res.eventName || '';
+
     window.top8EventoActual = eventoNombre; // Guardar globalmente para el guardado posterior
+    window.top8GameActual = gameCode;
+    window.top8GameNameActual = gameName;
+    window.top8VideogameActual = videogame;
+
     const top8Data = {
       evento: eventoNombre,
       fecha: new Date().toISOString().slice(0, 10),
+      game: gameCode,
+      gameName: gameName,
+      videogame: videogame,
       top8: jugadores.map(j => ({
         nombre: j.nombre,
         personaje: personajeDefault,
-        juego: juegoDefault,
+        juego: gameCode,
         twitter: twitterDefault,
         final_rank: j.final_rank
       }))
@@ -386,23 +396,35 @@ async function guardarTop8Actualizado() {
     
     // Usar las filas que funcionen
     const filasFinales = filas.length > 0 ? filas : filasAlternativo;
-    // Recuperar el nombre del evento de la variable global o del JSON actual
+    // Recuperar el nombre del evento, juego y gameName de variables globales o del JSON actual
     let eventoNombre = window.top8EventoActual || '';
-    if (!eventoNombre) {
-      // Intentar leer el evento del JSON actual
+    let gameCode = window.top8GameActual || '';
+    let gameName = window.top8GameNameActual || '';
+    let videogame = window.top8VideogameActual || null;
+
+    if (!eventoNombre || !gameCode) {
+      // Intentar leer datos del JSON actual
       try {
         const resLoad = await window.__TAURI__.core.invoke('load-json', { tipo: 'top8' });
-        if (resLoad.ok && resLoad.data && resLoad.data.evento) {
-          eventoNombre = resLoad.data.evento;
+        if (resLoad.ok && resLoad.data) {
+          if (!eventoNombre) eventoNombre = resLoad.data.evento || '';
+          if (!gameCode) gameCode = resLoad.data.game || '';
+          if (!gameName) gameName = resLoad.data.gameName || '';
+          if (!videogame) videogame = resLoad.data.videogame || null;
         }
       } catch {}
     }
+    if (!gameCode) gameCode = document.getElementById('gameSel')?.value || '';
+
     const top8Data = {
       evento: eventoNombre,
       fecha: new Date().toISOString().slice(0, 10),
+      game: gameCode,
+      gameName: gameName,
+      videogame: videogame,
       top8: []
     };
-    const juego = document.getElementById('gameSel')?.value || '';
+    const juego = gameCode;
     const is2xko = (juego === '2XKO');
 
     filasFinales.forEach((fila, index) => {
@@ -421,10 +443,13 @@ async function guardarTop8Actualizado() {
       });
       
       if (personajeSelect && twitterSelect) {
+        let personajeFinal = personajeSelect.value;
+        if (is2xko && personajeSelect2 && personajeSelect2.value) {
+          personajeFinal = `${personajeSelect.value}/${personajeSelect2.value}`;
+        }
         top8Data.top8.push({
           nombre: jugador,
-          personaje: personajeSelect.value,
-          personaje2: personajeSelect2 ? personajeSelect2.value : '',
+          personaje: personajeFinal,
           juego: juego,
           twitter: twitterSelect.value,
           final_rank: parseInt(puesto)
@@ -1155,9 +1180,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Guarda el bracket en bracket.json
-async function guardarBracketEnJson(torneo, fecha, sets) {
-
-
+async function guardarBracketEnJson(torneo, fecha, sets, videogameInput = null) {
+  const eventId = window.eventIdActual;
+  const videogame = videogameInput || window.startggEventGames?.[eventId] || null;
+  const gameCode = mapStartggVideogame(videogame) || document.getElementById('gameSel')?.value || '';
+  const gameName = videogame?.name || '';
 
   // Obtener los phaseId únicos de los sets
   const phaseIdSet = new Set();
@@ -1223,7 +1250,15 @@ async function guardarBracketEnJson(torneo, fecha, sets) {
     if (m.player1_id) participantes[m.player1_id] = m.player1_name;
     if (m.player2_id) participantes[m.player2_id] = m.player2_name;
   });
-  const bracketData = { torneo, fecha, matches, participantes };
+  const bracketData = {
+    torneo,
+    fecha,
+    game: gameCode,
+    gameName: gameName,
+    videogame: videogame,
+    matches,
+    participantes
+  };
   const res = await window.__TAURI__.core.invoke('save-bracket-json', { data: bracketData });
   return res;
 }
@@ -1650,7 +1685,7 @@ async function guardarBracketStartggDesdeWidget() {
     // Guardar bracket usando la función existente
     const torneo = window.eventNameActual || '';
     const fecha = new Date().toLocaleDateString('es-CL');
-    const saveResult = await guardarBracketEnJson(torneo, fecha, res.sets);
+    const saveResult = await guardarBracketEnJson(torneo, fecha, res.sets, res.videogame || window.startggEventGames?.[window.eventIdActual]);
 
     if (!saveResult.ok) {
       throw new Error(saveResult.error || 'Error desconocido al guardar');

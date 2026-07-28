@@ -24,17 +24,22 @@ $(function() {
         top8.forEach((p, i) => {
             const rank = posiciones[i] || (i+1);
             let charHtml = '';
-            if (p.juego === '2XKO' || (p.personaje2 && p.personaje2.trim())) {
-                const charImg1 = getCharImg(p.personaje, p.juego);
-                const charImg2 = getCharImg(p.personaje2, p.juego);
+            let chars = (p.personaje || '').split('/').map(c => c.trim()).filter(Boolean);
+            if (p.personaje2 && p.personaje2.trim() && chars.length === 1) {
+                chars.push(p.personaje2.trim());
+            }
+            
+            if (chars.length > 1) {
+                const charImg1 = getCharImg(chars[0], p.juego);
+                const charImg2 = getCharImg(chars[1], p.juego);
                 charHtml = `
                     <div class="top8-character-container">
-                        ${charImg1 ? `<img class="top8-character" src="${charImg1}" alt="${p.personaje}">` : ''}
-                        ${charImg2 ? `<img class="top8-character" src="${charImg2}" alt="${p.personaje2}">` : ''}
+                        ${charImg1 ? `<img class="top8-character" src="${charImg1}" alt="${chars[0]}">` : ''}
+                        ${charImg2 ? `<img class="top8-character" src="${charImg2}" alt="${chars[1]}">` : ''}
                     </div>
                 `;
             } else {
-                const charImg = getCharImg(p.personaje, p.juego);
+                const charImg = getCharImg(chars[0] || p.personaje, p.juego);
                 charHtml = charImg ? `<img class="top8-character" src="${charImg}" alt="${p.personaje}">` : '';
             }
 
